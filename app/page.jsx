@@ -71,10 +71,10 @@ export default function Home() {
   const role = user?.publicMetadata?.role;
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2500);
-    return () => clearTimeout(timer);
-  }, []);
+ useEffect(() => {
+    if (!isLoaded) return;
+    setLoading(false);
+}, [isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;

@@ -1,12 +1,15 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
-
 }
 
+// ============================================================
+// USER
+// ============================================================
 model User {
   id                   String              @id @default(uuid())
   clerkUserId          String              @unique
@@ -23,6 +26,7 @@ model User {
   verificationStatus   VerificationStatus? @default(PENDING)
   age                  Int?
   bloodType            String?
+
   doctorAppointments   Appointment[]       @relation("DoctorAppointments")
   patientAppointments  Appointment[]       @relation("PatientAppointments")
   availabilities       Availability[]
@@ -30,39 +34,19 @@ model User {
   patientConversations Conversation[]      @relation("PatientConversations")
   sentMessages         Message[]           @relation("SentMessages")
   Notification         Notification[]
-  patientProfile       PatientProfile?
-  approvedPayments     Payment[]           @relation("ApprovedPayments")
   doctorPrescriptions  Prescription[]      @relation("DoctorPrescriptions")
   patientPrescriptions Prescription[]      @relation("PatientPrescriptions")
-  salariesApprovedBy   SecretarySalary[]   @relation("SalaryApprovedBy")
+  patientProfile       PatientProfile?
+  approvedPayments     Payment[]           @relation("ApprovedPayments")
   salariesAsSecretary  SecretarySalary[]   @relation("SecretarySalaries")
-  faceVerification DoctorFaceVerification?
+  salariesApprovedBy   SecretarySalary[]   @relation("SalaryApprovedBy")
 
   @@map("User")
 }
-model DoctorFaceVerification {
-  id              String   @id @default(uuid())
 
-  doctorId        String   @unique
-  doctor          User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-
-  faceEmbedding   Json
-
-  isVerified      Boolean  @default(false)
-
-  enrolledAt      DateTime @default(now())
-  lastVerifiedAt  DateTime?
-
-  failedAttempts  Int      @default(0)
-  lockedUntil     DateTime?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([doctorId])
-  @@index([isVerified])
-}
-
+// ============================================================
+// AVAILABILITY
+// ============================================================
 model Availability {
   id        String     @id @default(uuid())
   doctorId  String
@@ -75,43 +59,51 @@ model Availability {
   @@index([status])
 }
 
+// ============================================================
+// APPOINTMENT
+// ============================================================
 model Appointment {
-  id                 String            @id @default(uuid())
+  id                 String              @id @default(uuid())
   patientId          String
   doctorId           String
   startTime          DateTime
   endTime            DateTime
-  status             AppointmentStatus @default(SCHEDULED)
+  status             AppointmentStatus   @default(SCHEDULED)
+  consultationType   ConsultationType    @default(REMOTE)   // ← جديد
+  duration           Int                 @default(30)        // ← جديد بالدقائق
   notes              String?
   patientDescription String?
   videoSessionId     String?
   videoSessionToken  String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
   cancellationReason String?
   rating             Int?
-  consultationType   ConsultationType  @default(REMOTE)
-  duration           Int               @default(30)
-  doctor             User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
-  patient            User              @relation("PatientAppointments", fields: [patientId], references: [id])
-  payment            Payment?
-  prescription       Prescription?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  doctor       User          @relation("DoctorAppointments",  fields: [doctorId],  references: [id])
+  patient      User          @relation("PatientAppointments", fields: [patientId], references: [id])
+  prescription Prescription?
+  payment      Payment?
 
   @@index([status, startTime])
   @@index([doctorId, startTime])
   @@index([patientId, startTime])
 }
 
+// ============================================================
+// CONVERSATION
+// ============================================================
 model Conversation {
   id          String    @id @default(uuid())
   doctorId    String
   patientId   String
+  lastMessage String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  lastMessage String?
-  doctor      User      @relation("DoctorConversations", fields: [doctorId], references: [id])
-  patient     User      @relation("PatientConversations", fields: [patientId], references: [id])
-  messages    Message[]
+
+  doctor   User      @relation("DoctorConversations",  fields: [doctorId],  references: [id])
+  patient  User      @relation("PatientConversations", fields: [patientId], references: [id])
+  messages Message[]
 
   @@unique([doctorId, patientId])
   @@index([doctorId])
@@ -119,21 +111,28 @@ model Conversation {
   @@index([updatedAt])
 }
 
+// ============================================================
+// MESSAGE
+// ============================================================
 model Message {
   id             String       @id @default(uuid())
   conversationId String
   senderId       String
   content        String
-  createdAt      DateTime     @default(now())
   files          Json?
   read           Boolean      @default(false)
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
 
   @@index([conversationId, createdAt])
   @@index([read])
 }
 
+// ============================================================
+// PRESCRIPTION
+// ============================================================
 model Prescription {
   id            String      @id @default(uuid())
   appointmentId String      @unique
@@ -145,21 +144,28 @@ model Prescription {
   followUpDate  DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor        User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
-  patient       User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor      User        @relation("DoctorPrescriptions",  fields: [doctorId],  references: [id])
+  patient     User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
 }
 
+// ============================================================
+// REPORT
+// ============================================================
 model Report {
   id        String   @id @default(uuid())
   name      String
   type      String   @default("PDF")
   status    String   @default("مكتمل")
   fileUrl   String?
-  createdAt DateTime @default(now())
   content   String?
+  createdAt DateTime @default(now())
 }
 
+// ============================================================
+// NOTIFICATION
+// ============================================================
 model Notification {
   id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   userId    String
@@ -170,13 +176,17 @@ model Notification {
   link      String?
   metadata  Json?
   createdAt DateTime @default(now())
-  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
 }
 
+// ============================================================
+// PATIENT PROFILE
+// ============================================================
 model PatientProfile {
   id                String      @id @default(uuid())
   userId            String      @unique
@@ -184,15 +194,19 @@ model PatientProfile {
   hasInsurance      Boolean     @default(false)
   hasChronicDisease Boolean     @default(false)
   isEmergency       Boolean     @default(false)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  phone             String?
   city              String?
   latitude          Float?
   longitude         Float?
-  phone             String?
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ============================================================
+// PAYMENT
+// ============================================================
 model Payment {
   id              String         @id @default(uuid())
   appointmentId   String         @unique
@@ -204,15 +218,19 @@ model Payment {
   amount          Float?
   adminCommission Float?
   notes           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  paidAt          DateTime?
   paypalOrderId   String?        @unique
   paypalStatus    String?
-  appointment     Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  approvedBy      User?          @relation("ApprovedPayments", fields: [approvedById], references: [id])
+  paidAt          DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  approvedBy  User?       @relation("ApprovedPayments", fields: [approvedById], references: [id])
 }
 
+// ============================================================
+// SECRETARY SALARY
+// ============================================================
 model SecretarySalary {
   id           String       @id @default(uuid())
   secretaryId  String
@@ -225,13 +243,18 @@ model SecretarySalary {
   notes        String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  approvedBy   User?        @relation("SalaryApprovedBy", fields: [approvedById], references: [id])
-  secretary    User         @relation("SecretarySalaries", fields: [secretaryId], references: [id])
+
+  secretary  User  @relation("SecretarySalaries", fields: [secretaryId],  references: [id])
+  approvedBy User? @relation("SalaryApprovedBy",  fields: [approvedById], references: [id])
 
   @@unique([secretaryId, month, year])
   @@index([secretaryId])
   @@index([status])
 }
+
+// ============================================================
+// ENUMS
+// ============================================================
 
 enum UserRole {
   UNASSIGNED
@@ -257,15 +280,15 @@ enum SlotStatus {
 
 enum AppointmentStatus {
   SCHEDULED
+  ONGOING      // ← جديد: الجلسة جارية الآن
   COMPLETED
   CANCELLED
-  ONGOING
-  MISSED
+  MISSED       // ← جديد: لم يحضر أحد الطرفين
 }
 
 enum ConsultationType {
-  REMOTE
-  IN_PERSON
+  REMOTE       // ← جديد: استشارة عن بُعد
+  IN_PERSON    // ← جديد: حضوري
 }
 
 enum IncomeLevel {
