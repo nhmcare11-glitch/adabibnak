@@ -78,12 +78,33 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (role === "PATIENT")              router.replace("/patient-dashboard");
-    if (role === "DOCTOR")               router.replace("/doctor");
-    if (role === "ADMIN")                router.replace("/admin");
-    if (role === "SECRETARY")            router.replace("/secretary-dashboard");
-    if (role === "VERIFICATION_MANAGER") router.replace("/verification-manager"); // ← جديد
-  }, [isLoaded, role, router]);
+
+    const redirectByRole = async () => {
+      // أولاً جرب من Clerk metadata
+      if (role === "PATIENT")              { router.replace("/patient-dashboard"); return; }
+      if (role === "DOCTOR")               { router.replace("/doctor"); return; }
+      if (role === "ADMIN")                { router.replace("/admin"); return; }
+      if (role === "SECRETARY")            { router.replace("/secretary-dashboard"); return; }
+      if (role === "VERIFICATION_MANAGER") { router.replace("/verification-manager"); return; }
+
+      // إذا ما لقاش role في Clerk، اتحقق من قاعدة البيانات
+      if (isLoaded && !role) {
+        try {
+          const res = await fetch("/api/check-role");
+          const data = await res.json();
+          if (data.role === "PATIENT")              router.replace("/patient-dashboard");
+          if (data.role === "DOCTOR")               router.replace("/doctor");
+          if (data.role === "ADMIN")                router.replace("/admin");
+          if (data.role === "SECRETARY")            router.replace("/secretary-dashboard");
+          if (data.role === "VERIFICATION_MANAGER") router.replace("/verification-manager");
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    };
+
+    redirectByRole();
+}, [isLoaded, role, router]);
 
   return (
     <>
