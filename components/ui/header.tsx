@@ -1,135 +1,284 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/nextjs';
-import { Button } from './button';
-import { ShieldCheck, Stethoscope, Calendar, User } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+
+import {
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
+
+import { Button } from "./button";
+
+import {
+  ShieldCheck,
+  Stethoscope,
+  Calendar,
+  User,
+  Sparkles,
+} from "lucide-react";
+
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationsBell } from "./NotificationsBell";
 import { getMyNotifications } from "@/actions/notifications";
 import { NavLinks } from "./NavLinks";
 
-const btn3D = `
-  transition-all duration-200
-  hover:[transform:perspective(400px)_translateZ(8px)_translateY(-3px)]
-  hover:shadow-[0_10px_28px_rgba(59,130,246,0.35)]
-  active:[transform:perspective(400px)_translateZ(-4px)_translateY(2px)]
-  active:shadow-[0_2px_6px_rgba(59,130,246,0.15)]
-` as const;
-
-const btn3DGhost = `
-  transition-all duration-200
-  hover:[transform:perspective(400px)_translateZ(6px)_translateY(-2px)]
-  hover:shadow-[0_6px_18px_rgba(59,130,246,0.25)]
-  active:[transform:perspective(400px)_translateZ(-3px)_translateY(1px)]
-` as const;
-
 const Header = () => {
   const { user: clerkUser, isSignedIn } = useUser();
-  const role = clerkUser?.publicMetadata?.role as string | undefined;
 
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
+  const role = clerkUser?.publicMetadata?.role as
+    | string
+    | undefined;
 
-  // جلب الإشعارات
+  const [notifications, setNotifications] =
+    useState([]);
+
+  const [unreadCount, setUnreadCount] =
+    useState(0);
+
+  const [scrolled, setScrolled] =
+    useState(false);
+
+  // Notifications
   useEffect(() => {
     if (!isSignedIn) return;
 
     const fetchNotifications = async () => {
       try {
-        const notifData = await getMyNotifications();
-        setNotifications(notifData.notifications);
-        setUnreadCount(notifData.unreadCount);
+        const notifData =
+          await getMyNotifications();
+
+        setNotifications(
+          notifData.notifications
+        );
+
+        setUnreadCount(
+          notifData.unreadCount
+        );
       } catch (e) {
-        console.log("Failed to fetch notifications:", e);
+        console.log(e);
       }
     };
 
     fetchNotifications();
   }, [isSignedIn]);
 
-  // مراقبة التمرير
+  // Scroll
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener(
+      "scroll",
+      handleScroll
+    );
+
+    return () =>
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
   }, []);
 
   return (
-    <header className={`
-      fixed top-0 w-full z-50 transition-all duration-500 ease-out
-      ${scrolled
-        ? 'bg-white/70 dark:bg-gray-900/70 backdrop-blur-lg border-b border-white/20 dark:border-gray-700/30 shadow-lg'
-        : 'bg-blue-100 backdrop-blur-md border-b-0 border-blue-700'
-      }
-    `}>
-      <nav className={`
-        container mx-auto px-4 flex items-center justify-between
-        transition-all duration-500 ease-out
-        ${scrolled ? 'h-14' : 'h-22'}
-      `} style={{ height: scrolled ? "3.5rem" : "5.5rem" }}>
+    <header
+      className={`
+        fixed top-0 left-0 w-full z-50
+        transition-all duration-500
+        border-b
+        ${
+          scrolled
+            ? `
+              bg-[#071312]/80
+              backdrop-blur-2xl
+              border-[#2DBFB8]/10
+              shadow-[0_8px_40px_rgba(0,0,0,0.35)]
+            `
+            : `
+              bg-transparent
+              border-transparent
+            `
+        }
+      `}
+    >
+      {/* Glow Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="
+            absolute
+            top-[-120px]
+            left-1/2
+            -translate-x-1/2
+            w-[700px]
+            h-[300px]
+            bg-[#2DBFB8]/10
+            blur-[120px]
+            rounded-full
+          "
+        />
+      </div>
 
-        {/* Logo - Left side */}
+      <nav
+        className={`
+          relative
+          container
+          mx-auto
+          px-5
+          flex
+          items-center
+          justify-between
+          transition-all
+          duration-500
+          ${
+            scrolled
+              ? "h-[78px]"
+              : "h-[95px]"
+          }
+        `}
+      >
+        {/* LEFT */}
         <Link
           href="/"
-          className={`
-            flex items-center gap-2 cursor-pointer flex-shrink-0
-            transition-all duration-500
-            hover:[transform:perspective(400px)_translateZ(6px)_translateY(-2px)]
-          `}
-          style={{ willChange: "transform" }}
+          className="
+            flex
+            items-center
+            gap-3
+            group
+          "
         >
-          <Image
-            src="/logo-s.png"
-            alt="Adabibanek Logo"
-            width={800}
-            height={200}
-            className={`
-              object-contain transition-all duration-500
-              ${scrolled ? 'h-8 w-auto' : 'h-12 w-auto'}
-            `}
-          />
-          <div className={`flex flex-col transition-all duration-500 ${scrolled ? 'hidden md:flex' : 'flex'}`}>
-            <span className={`text-blue-200 dark:text-blue-300 font-bold font-serif transition-all duration-500 ${scrolled ? 'text-sm' : 'text-xl'}`}>
+          <div
+            className="
+              relative
+              flex
+              items-center
+              justify-center
+            "
+          >
+            <div
+              className="
+                absolute
+                inset-0
+                bg-[#2DBFB8]/30
+                blur-2xl
+                rounded-full
+                opacity-70
+                group-hover:opacity-100
+                transition
+              "
+            />
+
+            <Image
+              src="/logo-s.png"
+              alt="logo"
+              width={220}
+              height={220}
+              priority
+              className={`
+                relative
+                object-contain
+                transition-all
+                duration-500
+                drop-shadow-[0_0_25px_rgba(45,191,184,0.5)]
+                ${
+                  scrolled
+                    ? "h-10 w-auto"
+                    : "h-14 w-auto"
+                }
+              `}
+            />
+          </div>
+
+          <div className="hidden md:flex flex-col">
+            <h1
+              className={`
+                font-black
+                tracking-wide
+                text-white
+                transition-all
+                duration-500
+                ${
+                  scrolled
+                    ? "text-lg"
+                    : "text-2xl"
+                }
+              `}
+            >
               Adabibanek
-            </span>
-            <span className={`text-amber-200 dark:text-amber-400 text-sm transition-opacity duration-500 ${scrolled ? 'opacity-0 hidden' : 'opacity-100'}`}>
+            </h1>
+
+            <span
+              className="
+                text-[#7EE7E1]
+                text-xs
+                tracking-[0.25em]
+                uppercase
+              "
+            >
               ⵜⴰⵎⵏⵔⴰⵙⵜ - تمنراست
             </span>
           </div>
         </Link>
 
-        {/* NavLinks في المنتصف */}
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <NavLinks />
+        {/* CENTER NAV */}
+        <div
+          className="
+            hidden
+            lg:flex
+            absolute
+            left-1/2
+            -translate-x-1/2
+          "
+        >
+          <div
+            className="
+              px-6
+              py-3
+              rounded-full
+              bg-white/5
+              backdrop-blur-xl
+              border
+              border-white/10
+              shadow-[0_8px_30px_rgba(0,0,0,0.2)]
+            "
+          >
+            <NavLinks />
+          </div>
         </div>
 
-        {/* Buttons group - Right side */}
-        <div className="flex items-center space-x-2 flex-shrink-0">
-
+        {/* RIGHT */}
+        <div
+          className="
+            flex
+            items-center
+            gap-2
+          "
+        >
           <SignedIn>
             {role === "ADMIN" && (
               <Link href="/admin">
                 <Button
-                  variant="outline"
-                  className={`hidden md:inline-flex items-center gap-2 ${btn3D}`}
-                  style={{ willChange: "transform" }}
+                  className="
+                    hidden
+                    md:flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#2DBFB8]
+                    hover:bg-[#27a8a2]
+                    text-white
+                    shadow-[0_0_25px_rgba(45,191,184,0.4)]
+                    transition-all
+                    duration-300
+                    hover:scale-105
+                  "
                 >
-                  <ShieldCheck className="h-4 w-4" />
-                  Admin Dashboard
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`md:hidden w-10 h-10 p-0 ${btn3DGhost}`}
-                  style={{ willChange: "transform" }}
-                >
-                  <ShieldCheck className="h-4 w-4" />
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin
                 </Button>
               </Link>
             )}
@@ -137,19 +286,23 @@ const Header = () => {
             {role === "DOCTOR" && (
               <Link href="/doctor">
                 <Button
-                  variant="outline"
-                  className={`hidden md:inline-flex items-center gap-2 ${btn3D}`}
-                  style={{ willChange: "transform" }}
+                  className="
+                    hidden
+                    md:flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#2DBFB8]
+                    hover:bg-[#27a8a2]
+                    text-white
+                    shadow-[0_0_25px_rgba(45,191,184,0.4)]
+                    transition-all
+                    duration-300
+                    hover:scale-105
+                  "
                 >
-                  <Stethoscope className="h-4 w-4" />
-                  Doctor Dashboard
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`md:hidden w-10 h-10 p-0 ${btn3DGhost}`}
-                  style={{ willChange: "transform" }}
-                >
-                  <Stethoscope className="h-4 w-4" />
+                  <Stethoscope className="w-4 h-4" />
+                  Doctor
                 </Button>
               </Link>
             )}
@@ -157,19 +310,23 @@ const Header = () => {
             {role === "PATIENT" && (
               <Link href="/appointments">
                 <Button
-                  variant="outline"
-                  className={`hidden md:inline-flex items-center gap-2 ${btn3D}`}
-                  style={{ willChange: "transform" }}
+                  className="
+                    hidden
+                    md:flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#2DBFB8]
+                    hover:bg-[#27a8a2]
+                    text-white
+                    shadow-[0_0_25px_rgba(45,191,184,0.4)]
+                    transition-all
+                    duration-300
+                    hover:scale-105
+                  "
                 >
-                  <Calendar className="h-4 w-4" />
-                  My Appointments
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`md:hidden w-10 h-10 p-0 ${btn3DGhost}`}
-                  style={{ willChange: "transform" }}
-                >
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="w-4 h-4" />
+                  Appointments
                 </Button>
               </Link>
             )}
@@ -177,68 +334,116 @@ const Header = () => {
             {role === "UNASSIGNED" && (
               <Link href="/onboarding">
                 <Button
-                  variant="outline"
-                  className={`hidden md:inline-flex items-center gap-2 ${btn3D}`}
-                  style={{ willChange: "transform" }}
+                  className="
+                    hidden
+                    md:flex
+                    items-center
+                    gap-2
+                    rounded-full
+                    bg-[#2DBFB8]
+                    hover:bg-[#27a8a2]
+                    text-white
+                    shadow-[0_0_25px_rgba(45,191,184,0.4)]
+                    transition-all
+                    duration-300
+                    hover:scale-105
+                  "
                 >
-                  <User className="h-4 w-4" />
-                  اكمل الملف الشخصي
-                </Button>
-                <Button
-                  variant="ghost"
-                  className={`md:hidden w-10 h-10 p-0 ${btn3DGhost}`}
-                  style={{ willChange: "transform" }}
-                >
-                  <User className="h-4 w-4" />
+                  <User className="w-4 h-4" />
+                  Complete Profile
                 </Button>
               </Link>
             )}
           </SignedIn>
 
-          {/* Notifications Bell */}
+          {/* Notifications */}
           {isSignedIn && (
-            <NotificationsBell
-              initialNotifications={notifications}
-              initialUnreadCount={unreadCount}
-            />
+            <div
+              className="
+                bg-white/5
+                border
+                border-white/10
+                rounded-full
+                backdrop-blur-xl
+                p-1
+              "
+            >
+              <NotificationsBell
+                initialNotifications={
+                  notifications
+                }
+                initialUnreadCount={
+                  unreadCount
+                }
+              />
+            </div>
           )}
 
-          {/* Theme Toggle مع الغيوم والنجوم */}
-          <ThemeToggle />
+          {/* Theme */}
+          <div
+            className="
+              bg-white/5
+              border
+              border-white/10
+              rounded-full
+              backdrop-blur-xl
+              p-1
+            "
+          >
+            <ThemeToggle />
+          </div>
 
+          {/* Signed Out */}
           <SignedOut>
             <SignInButton>
               <Button
-                variant="secondary"
-                className={`bg-blue-200 text-gray-900 hover:bg-blue-300 ${btn3D}`}
-                style={{ willChange: "transform" }}
+                className="
+                  rounded-full
+                  px-6
+                  bg-gradient-to-r
+                  from-[#2DBFB8]
+                  to-[#1E8E89]
+                  hover:scale-105
+                  text-white
+                  shadow-[0_0_30px_rgba(45,191,184,0.45)]
+                  transition-all
+                  duration-300
+                  border
+                  border-[#7EE7E1]/20
+                "
               >
+                <Sparkles className="w-4 h-4 mr-2" />
                 تسجيل الدخول
               </Button>
             </SignInButton>
           </SignedOut>
 
+          {/* User */}
           <SignedIn>
             <div
-              className="transition-all duration-200
-                hover:[transform:perspective(400px)_translateZ(6px)_translateY(-2px)]
-                hover:shadow-[0_8px_20px_rgba(59,130,246,0.3)]
-                rounded-full"
-              style={{ willChange: "transform" }}
+              className="
+                rounded-full
+                border
+                border-[#2DBFB8]/20
+                bg-white/5
+                backdrop-blur-xl
+                p-[2px]
+                hover:scale-105
+                transition-all
+                duration-300
+              "
             >
               <UserButton
                 appearance={{
                   elements: {
-                    avatarBox: "w-10 h-10",
-                    userButtonPopoverCard: "shadow-xl",
-                    userPreviewMainIdentifier: "font-semibold",
+                    avatarBox:
+                      "w-10 h-10",
                   },
                 }}
                 afterSignOutUrl="/"
               />
             </div>
           </SignedIn>
-
         </div>
       </nav>
     </header>
