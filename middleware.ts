@@ -1,24 +1,48 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// كل الصفحات اللي تحتاج تسجيل دخول
-const isProtectedRoute = createRouteMatcher([
-  "/doctors(.*)",
-  "/onboarding(.*)",
-  "/doctor(.*)",
-  "/admin(.*)",
-  "/video-call(.*)",
-  "/appointments(.*)",
-  "/secretary-dashboard(.*)",   // ← جديد: صفحات السكرتيرة
-]);
+// تعريف المسارات حسب الصلاحية
+const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isDoctorRoute = createRouteMatcher(["/doctor(.*)", "/video-call(.*)"]);
+const isSecretaryRoute = createRouteMatcher(["/secretary-dashboard(.*)"]);
+const isPatientRoute = createRouteMatcher(["/appointments(.*)", "/doctors(.*)"]);
+const isOnboardingRoute = createRouteMatcher(["/onboarding(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
+  const { userId, sessionClaims } = await auth();
+  const role = sessionClaims?.metadata?.role as string | undefined;
 
-  // إذا المستخدم مش مسجل دخول وحاول يفتح صفحة محمية
-  if (!userId && isProtectedRoute(req)) {
-    const { redirectToSignIn } = await auth();
-    return redirectToSignIn();
+  // غير مسجّل دخول → أعد توجيهه لتسجيل الدخول
+  if (!userId) {
+    if (
+      isAdminRoute(req) ||
+      isDoctorRoute(req) ||
+      isSecretaryRoute(req) ||
+      isPatientRoute(req) ||
+      isOnboardingRoute(req)
+    ) {
+      const { redirectToSignIn } = await auth();
+      return redirectToSignIn();
+    }
+    return NextResponse.next();
+  }
+
+  // مسجّل دخول لكن بدون role → أرسله للـ onboarding
+  if (!role && !isOnboardingRoute(req)) {
+    return NextResponse.redirect(new URL("/onboarding", req.url));
+  }
+
+  // التحقق من الصلاحية حسب المسار
+  if (isAdminRoute(req) && role !== "admin") {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (isDoctorRoute(req) && role !== "doctor") {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  }
+
+  if (isSecretaryRoute(req) && role !== "secretary") {
+    return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
   return NextResponse.next();
