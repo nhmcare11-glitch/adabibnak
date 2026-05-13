@@ -9,7 +9,8 @@ const isProtectedRoute = createRouteMatcher([
   "/admin(.*)",
   "/video-call(.*)",
   "/appointments(.*)",
-  "/secretary-dashboard(.*)",   // ← جديد: صفحات السكرتيرة
+  "/secretary-dashboard(.*)",
+  "/verification-manager(.*)",   // ← جديد: صفحات مدير التحقق
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

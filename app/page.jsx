@@ -71,16 +71,18 @@ export default function Home() {
   const role = user?.publicMetadata?.role;
   const [loading, setLoading] = useState(true);
 
- useEffect(() => {
+  useEffect(() => {
     if (!isLoaded) return;
     setLoading(false);
-}, [isLoaded]);
+  }, [isLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
-    if (role === "PATIENT") router.replace("/patient-dashboard");
-    if (role === "DOCTOR") router.replace("/doctor");
-    if (role === "ADMIN") router.replace("/admin");
+    if (role === "PATIENT")              router.replace("/patient-dashboard");
+    if (role === "DOCTOR")               router.replace("/doctor");
+    if (role === "ADMIN")                router.replace("/admin");
+    if (role === "SECRETARY")            router.replace("/secretary-dashboard");
+    if (role === "VERIFICATION_MANAGER") router.replace("/verification-manager"); // ← جديد
   }, [isLoaded, role, router]);
 
   return (
@@ -97,7 +99,6 @@ export default function Home() {
 
         {/* Why Section */}
         <section className="py-24 relative overflow-hidden" dir="rtl">
-          {/* Background Glow */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-[-150px] left-[-100px] w-[400px] h-[400px] bg-[#2DBFB8]/10 dark:bg-[#0a4f49]/20 blur-[120px] rounded-full" />
             <div className="absolute bottom-[-180px] right-[-120px] w-[450px] h-[450px] bg-cyan-300/10 dark:bg-[#2dd4bf]/20 blur-[140px] rounded-full" />
@@ -108,11 +109,9 @@ export default function Home() {
               <Badge variant="outline" className="bg-[#2DBFB8]/20 dark:bg-[#2DBFB8]/40 border-[#2DBFB8]/30 px-4 py-1.5 text-[#062220] dark:text-[#2DBFB8] text-sm font-medium mb-5">
                 مميزاتنا
               </Badge>
-
               <h2 className="text-4xl md:text-5xl font-black text-[#062220] dark:text-[#2DBFB8] mb-4">
                 لماذا <span className="text-[#3dd6cf] dark:text-[#7EE7E1]">Adabibanek؟</span>
               </h2>
-
               <p className="text-[#4b6b68] dark:text-slate-200 text-lg max-w-xl mx-auto">
                 منصة صحية متكاملة للأطباء والمرضى
               </p>
@@ -144,15 +143,12 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <Card className="overflow-hidden border border-[#2DBFB8]/20 bg-white/40 dark:bg-[#071817]/80 backdrop-blur-2xl shadow-[0_20px_80px_rgba(45,191,184,0.12)] rounded-[34px]">
               <CardContent className="p-0 relative">
-                {/* Image */}
                 <div className="relative h-[420px] w-full overflow-hidden">
                   <Image src="/are-you-ready.jpg" alt="medical" fill priority className="object-cover" />
-                  {/* Overlays */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#dffcfb]/95 via-[#dffcfb]/40 to-transparent dark:hidden" />
                   <div className="hidden dark:block absolute inset-0 bg-gradient-to-t from-[#071312]/95 via-[#071312]/50 to-transparent" />
                   <div className="absolute bottom-[-120px] left-1/2 -translate-x-1/2 w-[500px] h-[250px] bg-[#2DBFB8]/20 blur-[120px] rounded-full" />
                 </div>
-                {/* Content */}
                 <div className="absolute inset-0 z-10 flex items-center">
                   <div className="p-10 md:p-16 max-w-2xl">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2DBFB8]/10 border border-[#2DBFB8]/20 text-[#2DBFB8] dark:text-[#7EE7E1] mb-6 backdrop-blur-xl">

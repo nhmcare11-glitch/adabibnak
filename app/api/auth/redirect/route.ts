@@ -64,6 +64,15 @@ export async function GET(request: Request) {
     }
 
     // =========================
+    // VERIFICATION_MANAGER  ← جديد
+    // =========================
+    if (dbUser.role === "VERIFICATION_MANAGER") {
+      return NextResponse.redirect(
+        new URL("/verification-manager", request.url)
+      );
+    }
+
+    // =========================
     // DOCTOR
     // =========================
     if (dbUser.role === "DOCTOR") {
