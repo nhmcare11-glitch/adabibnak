@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+model User {
+  id                   String              @id @default(uuid())
+  clerkUserId          String              @unique
+  email                String              @unique
+  name                 String?
+  imageUrl             String?
+  role                 UserRole            @default(UNASSIGNED)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  specialty            String?
+  experience           Int?
+  credentialUrl        String?
+  description          String?
+  verificationStatus   VerificationStatus? @default(PENDING)
+  age                  Int?
+  bloodType            String?
+  doctorAppointments   Appointment[]       @relation("DoctorAppointments")
+  patientAppointments  Appointment[]       @relation("PatientAppointments")
+  availabilities       Availability[]
+  doctorConversations  Conversation[]      @relation("DoctorConversations")
+  patientConversations Conversation[]      @relation("PatientConversations")
+  sentMessages         Message[]           @relation("SentMessages")
+  Notification         Notification[]
+  patientProfile       PatientProfile?
+  approvedPayments     Payment[]           @relation("ApprovedPayments")
+  doctorPrescriptions  Prescription[]      @relation("DoctorPrescriptions")
+  patientPrescriptions Prescription[]      @relation("PatientPrescriptions")
+  salariesApprovedBy   SecretarySalary[]   @relation("SalaryApprovedBy")
+  salariesAsSecretary  SecretarySalary[]   @relation("SecretarySalaries")
+  faceVerification DoctorFaceVerification?
+
+  @@map("User")
+}
+model DoctorFaceVerification {
+  id              String   @id @default(uuid())
+
+  doctorId        String   @unique
+  doctor          User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  faceEmbedding   Json
+
+  isVerified      Boolean  @default(false)
+
+  enrolledAt      DateTime @default(now())
+  lastVerifiedAt  DateTime?
+
+  failedAttempts  Int      @default(0)
+  lockedUntil     DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([doctorId])
+  @@index([isVerified])
+}
+
+model Availability {
+  id        String     @id @default(uuid())
+  doctorId  String
+  startTime DateTime
+  endTime   DateTime
+  status    SlotStatus @default(AVAILABLE)
+  doctor    User       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId, startTime])
+  @@index([status])
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  patientId          String
+  doctorId           String
+  startTime          DateTime
+  endTime            DateTime
+  status             AppointmentStatus @default(SCHEDULED)
+  notes              String?
+  patientDescription String?
+  videoSessionId     String?
+  videoSessionToken  String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  cancellationReason String?
+  rating             Int?
+  consultationType   ConsultationType  @default(REMOTE)
+  duration           Int               @default(30)
+  doctor             User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  patient            User              @relation("PatientAppointments", fields: [patientId], references: [id])
+  payment            Payment?
+  prescription       Prescription?
+
+  @@index([status, startTime])
+  @@index([doctorId, startTime])
+  @@index([patientId, startTime])
+}
+
+model Conversation {
+  id          String    @id @default(uuid())
+  doctorId    String
+  patientId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastMessage String?
+  doctor      User      @relation("DoctorConversations", fields: [doctorId], references: [id])
+  patient     User      @relation("PatientConversations", fields: [patientId], references: [id])
+  messages    Message[]
+
+  @@unique([doctorId, patientId])
+  @@index([doctorId])
+  @@index([patientId])
+  @@index([updatedAt])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime     @default(now())
+  files          Json?
+  read           Boolean      @default(false)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([read])
+}
+
+model Prescription {
+  id            String      @id @default(uuid())
+  appointmentId String      @unique
+  doctorId      String
+  patientId     String
+  diagnosis     String?
+  medications   Json
+  instructions  String?
+  followUpDate  DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor        User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  patient       User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  name      String
+  type      String   @default("PDF")
+  status    String   @default("مكتمل")
+  fileUrl   String?
+  createdAt DateTime @default(now())
+  content   String?
+}
+
+model Notification {
+  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  userId    String
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model PatientProfile {
+  id                String      @id @default(uuid())
+  userId            String      @unique
+  incomeLevel       IncomeLevel @default(MEDIUM)
+  hasInsurance      Boolean     @default(false)
+  hasChronicDisease Boolean     @default(false)
+  isEmergency       Boolean     @default(false)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  city              String?
+  latitude          Float?
+  longitude         Float?
+  phone             String?
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id              String         @id @default(uuid())
+  appointmentId   String         @unique
+  suggestedMethod PaymentMethod
+  approvedMethod  PaymentMethod?
+  status          PaymentStatus  @default(PENDING_APPROVAL)
+  approvedById    String?
+  approvedAt      DateTime?
+  amount          Float?
+  adminCommission Float?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  paidAt          DateTime?
+  paypalOrderId   String?        @unique
+  paypalStatus    String?
+  appointment     Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  approvedBy      User?          @relation("ApprovedPayments", fields: [approvedById], references: [id])
+}
+
+model SecretarySalary {
+  id           String       @id @default(uuid())
+  secretaryId  String
+  amount       Float
+  month        Int
+  year         Int
+  status       SalaryStatus @default(PENDING)
+  paidAt       DateTime?
+  approvedById String?
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  approvedBy   User?        @relation("SalaryApprovedBy", fields: [approvedById], references: [id])
+  secretary    User         @relation("SecretarySalaries", fields: [secretaryId], references: [id])
+
+  @@unique([secretaryId, month, year])
+  @@index([secretaryId])
+  @@index([status])
+}
+
+enum UserRole {
+  UNASSIGNED
+  PATIENT
+  DOCTOR
+  ADMIN
+  SECRETARY
+  VERIFICATION_MANAGER
+  SECRETARY_GENERAL
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  ONGOING
+  MISSED
+}
+
+enum ConsultationType {
+  REMOTE
+  IN_PERSON
+}
+
+enum IncomeLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  FREE
+  DEFERRED
+}
+
+enum PaymentStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum SalaryStatus {
+  PENDING
+  PAID
+}
