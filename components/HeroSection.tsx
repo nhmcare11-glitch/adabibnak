@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, Video } from "lucide-react";
+import EmergencyButton from "@/components/ui/emergency-button";
 
 export default function HeroSection({ startHref = "/onboarding" }: { startHref?: string }) {
   const [mounted, setMounted] = useState(false);
@@ -70,7 +71,7 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
           </p>
 
           {/* الأزرار */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 items-center">
             <Link href={startHref}>
               <button className="flex items-center gap-2 rounded-full bg-[#2DBFB8] px-7 py-3.5 text-sm font-bold text-white shadow-[0_8px_25px_rgba(45,191,184,0.5)] transition-all hover:-translate-y-0.5 hover:bg-teal-500">
                 <Calendar className="h-4 w-4" />
@@ -83,6 +84,8 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
                 استشارة فورية
               </button>
             </Link>
+            {/* ── زر الطوارئ ── */}
+            <EmergencyButton />
           </div>
         </div>
       </div>

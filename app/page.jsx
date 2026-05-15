@@ -8,6 +8,7 @@ import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import HeroSection from "@/components/HeroSection";
+import EmergencyButton from "@/components/ui/emergency-button";
 import {
   Stethoscope, Baby, Brain, FlaskConical,
   ArrowLeft, Star, HeartPulse, ClipboardList,
@@ -99,17 +100,22 @@ export default function Home() {
         <ScrollToTopButton />
 
         {/* ══════════════════════════════════
+            زر طوارئ عائم للموبايل فقط
+        ══════════════════════════════════ */}
+        <div className="fixed bottom-24 right-6 z-50 md:hidden">
+          <EmergencyButton />
+        </div>
+
+        {/* ══════════════════════════════════
             1. HERO — full-width bg image
         ══════════════════════════════════ */}
         <HeroSection startHref={startHref} />
 
         {/* ══════════════════════════════════
             2. WHY SECTION — "لماذا تختار أديبيناك؟"
-            Layout: 2-col asymmetric bento grid
         ══════════════════════════════════ */}
         <section className="py-20" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
-            {/* Header */}
             <div className="mb-10 text-center">
               <h2 className="mb-2 text-2xl font-black text-[#062220] dark:text-white md:text-3xl">
                 لماذا تختار أديبيناك؟
@@ -119,12 +125,8 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Bento Grid — matches screenshot exactly */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-              {/* Row 1: big teal card (right) + small card (left) */}
               <div className="flex flex-col gap-5">
-                {/* Teal featured card */}
                 <div className="relative overflow-hidden rounded-3xl bg-[#0f766e] p-7 text-white shadow-xl">
                   <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/10" />
                   <div className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-white/5" />
@@ -143,7 +145,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Small card: تحليلات ذكية */}
                 <TiltCard className="rounded-2xl border border-[#2DBFB8]/20 bg-white p-6 shadow-sm dark:border-[#2DBFB8]/15 dark:bg-[#0a1e1d]">
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#2DBFB8]/15">
                     <HeartPulse className="h-5 w-5 text-[#2DBFB8]" />
@@ -155,9 +156,7 @@ export default function Home() {
                 </TiltCard>
               </div>
 
-              {/* Row 1 col 2: small card (top) + big card (bottom) */}
               <div className="flex flex-col gap-5">
-                {/* Small: تغطية صحراوية */}
                 <TiltCard className="rounded-2xl border border-[#2DBFB8]/20 bg-white p-6 shadow-sm dark:border-[#2DBFB8]/15 dark:bg-[#0a1e1d]">
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#2DBFB8]/15">
                     <Brain className="h-5 w-5 text-[#2DBFB8]" />
@@ -172,7 +171,6 @@ export default function Home() {
                   </button>
                 </TiltCard>
 
-                {/* Big: نخبة الأطباء */}
                 <TiltCard className="rounded-2xl border border-[#2DBFB8]/20 bg-white p-6 shadow-sm dark:border-[#2DBFB8]/15 dark:bg-[#0a1e1d]">
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#2DBFB8]/15">
                     <ClipboardList className="h-5 w-5 text-[#2DBFB8]" />
@@ -188,7 +186,7 @@ export default function Home() {
         </section>
 
         {/* ══════════════════════════════════
-            3. SERVICES GRID — "خدمات طبية شاملة"
+            3. SERVICES GRID
         ══════════════════════════════════ */}
         <section className="bg-[#f0f2f5] py-20 dark:bg-[#071312]" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
@@ -230,18 +228,15 @@ export default function Home() {
         </section>
 
         {/* ══════════════════════════════════
-            4. CTA DARK CARD — "جاهز لرحلة صحية أكثر ذكاءً؟"
-            Dark teal card with circular doctor image
+            4. CTA DARK CARD
         ══════════════════════════════════ */}
         <section className="py-20" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
             <div className="relative overflow-hidden rounded-3xl bg-[#062220] shadow-2xl dark:bg-[#031410]">
-              {/* Background glow */}
               <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[#2DBFB8]/15 blur-[80px]" />
               <div className="pointer-events-none absolute -bottom-16 right-32 h-48 w-48 rounded-full bg-[#2DBFB8]/10 blur-[60px]" />
 
               <div className="relative z-10 flex flex-col items-center gap-8 p-10 md:flex-row md:items-center md:justify-between md:p-14">
-                {/* Text */}
                 <div className="max-w-lg text-right">
                   <h2 className="mb-4 text-2xl font-black leading-snug text-white md:text-3xl lg:text-4xl">
                     جاهز لرحلة صحية أكثر ذكاءً؟
@@ -263,12 +258,10 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Doctor circular image */}
                 <div className="relative shrink-0">
                   <div className="relative h-52 w-52 overflow-hidden rounded-full border-4 border-[#2DBFB8]/40 shadow-[0_0_50px_rgba(45,191,184,0.3)] md:h-64 md:w-64">
                     <Image src="/home.png" alt="doctor" fill className="object-cover object-[2%_center]" />
                   </div>
-                  {/* Glow ring */}
                   <div className="absolute inset-0 rounded-full border-2 border-[#2DBFB8]/20 scale-110" />
                 </div>
               </div>
@@ -277,7 +270,7 @@ export default function Home() {
         </section>
 
         {/* ══════════════════════════════════
-            5. TESTIMONIALS — "ماذا يقول عملاؤنا؟"
+            5. TESTIMONIALS
         ══════════════════════════════════ */}
         <section className="bg-[#f0f2f5] py-20 dark:bg-[#071312]" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
