@@ -11,8 +11,14 @@ import {
   Minimize2,
   Maximize2,
   AlertCircle,
+  Video,
+  Loader2,
 } from "lucide-react";
-
+import {
+  doctorJoinedVideoCall,
+  patientJoinedVideoCall,
+  endVideoCall,
+} from "@/actions/video-call";
 
 export default function VideoCallLayout({
   sessionId,
@@ -24,12 +30,15 @@ export default function VideoCallLayout({
   const [phase, setPhase] = useState("pre-check");
   const [collapsed, setCollapsed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
 
   const containerRef = useRef(null);
 
   const isDoctor =
-  appointment?.doctor?.clerkUserId === currentUserId ||
-  appointment?.doctorId === currentUserId;
+    appointment?.doctor?.clerkUserId === currentUserId ||
+    appointment?.doctorId === currentUserId;
+
+  const isPatient = !isDoctor;
 
   // ─────────────────────────────
   // JITSI
@@ -45,7 +54,7 @@ export default function VideoCallLayout({
       const domain = "meet.jit.si";
 
       api = new window.JitsiMeetExternalAPI(domain, {
-       roomName: sessionId,
+        roomName: sessionId,
 
         parentNode: document.getElementById("jitsi-container"),
 
@@ -129,11 +138,45 @@ export default function VideoCallLayout({
   }, []);
 
   // ─────────────────────────────
+  // HANDLE JOIN (with notification)
+  // ─────────────────────────────
+
+  const handleJoinCall = async () => {
+    setIsJoining(true);
+
+    try {
+      if (isDoctor && appointment?.id) {
+        // ✅ Doctor joined → notify patient
+        await doctorJoinedVideoCall(appointment.id);
+      } else if (isPatient && appointment?.id) {
+        // ✅ Patient joined → update status
+        await patientJoinedVideoCall(appointment.id);
+      }
+
+      setPhase("calling");
+    } catch (error) {
+      console.error("Join error:", error);
+      // Still enter the call even if notification fails
+      setPhase("calling");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  // ─────────────────────────────
   // END CALL
   // ─────────────────────────────
 
   const handleEnd = async () => {
-    router.push("/appointments");
+    try {
+      if (appointment?.id) {
+        await endVideoCall(appointment.id);
+      }
+    } catch (error) {
+      console.error("End call error:", error);
+    }
+
+    router.push(isDoctor ? "/doctor-dashboard" : "/patient-dashboard");
   };
 
   // ─────────────────────────────
@@ -166,13 +209,13 @@ export default function VideoCallLayout({
           </p>
 
           <button
-            onClick={() => router.push("/appointments")}
+            onClick={() => router.push(isDoctor ? "/doctor-dashboard" : "/patient-dashboard")}
             className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white"
             style={{
               background: "linear-gradient(135deg,#2563eb,#0891b2)",
             }}
           >
-            العودة للمواعيد
+            العودة للداشبورد
           </button>
         </div>
       </div>
@@ -198,23 +241,45 @@ export default function VideoCallLayout({
           }}
         >
           <div className="text-center">
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+              style={{
+                background: "linear-gradient(135deg, #2563eb, #0891b2)",
+              }}
+            >
+              <Video className="w-10 h-10 text-white" />
+            </div>
+
             <h1 className="text-5xl font-bold text-white mb-5">
-              جاهزية الاستشارة الطبية
+              {isDoctor ? "بدء الاستشارة" : "الانضمام للاستشارة"}
             </h1>
 
             <p className="text-slate-400 mb-8 text-lg">
-              اضغط للدخول إلى غرفة الاستشارة
+              {isDoctor
+                ? `مع ${appointment?.patient?.name || "المريض"}`
+                : `مع د. ${appointment?.doctor?.name || "الطبيب"}`}
             </p>
 
             <button
-              onClick={() => setPhase("calling")}
-              className="px-10 py-4 rounded-2xl text-white font-bold text-lg"
+              onClick={handleJoinCall}
+              disabled={isJoining}
+              className="px-10 py-4 rounded-2xl text-white font-bold text-lg flex items-center gap-3 mx-auto disabled:opacity-50"
               style={{
                 background: "linear-gradient(135deg,#2563eb,#0891b2)",
                 boxShadow: "0 10px 40px rgba(37,99,235,.35)",
               }}
             >
-              الدخول إلى الاستشارة
+              {isJoining ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  جاري الدخول...
+                </>
+              ) : (
+                <>
+                  <Video className="w-5 h-5" />
+                  {isDoctor ? "بدء المكالمة" : "الدخول إلى الاستشارة"}
+                </>
+              )}
             </button>
           </div>
         </motion.div>

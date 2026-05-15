@@ -219,18 +219,32 @@ export async function getDoctorAppointmentsWithPayments() {
 
   try {
     const doctor = await db.user.findUnique({
-  where: { clerkUserId: userId },
-});
-if (!doctor || doctor.role !== "DOCTOR") throw new Error("الطبيب غير موجود");
+      where: { clerkUserId: userId },
+    });
+    
+    if (!doctor || doctor.role !== "DOCTOR") {
+      throw new Error("الطبيب غير موجود");
+    }
 
     const appointments = await db.appointment.findMany({
       where: {
         doctorId: doctor.id,
-        status: { in: ["SCHEDULED", "COMPLETED"] },
+        status: { in: ["SCHEDULED", "COMPLETED", "ONGOING"] },
       },
       include: {
-        patient: { include: { patientProfile: true } },
-        payment: { include: { approvedBy: { select: { name: true } } } },
+        patient: { 
+          include: { 
+            patientProfile: true 
+          } 
+        },
+        payment: { 
+          include: { 
+            approvedBy: { 
+              select: { name: true } 
+            } 
+          } 
+        },
+        prescription: true,
       },
       orderBy: { startTime: "asc" },
     });
@@ -267,10 +281,13 @@ export async function getPatientAppointmentsWithPayments() {
   if (!userId) throw new Error("Unauthorized");
 
   try {
-  const patient = await db.user.findUnique({
-  where: { clerkUserId: userId },
-});
-if (!patient || patient.role !== "PATIENT") throw new Error("المريض غير موجود");
+    const patient = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+    
+    if (!patient || patient.role !== "PATIENT") {
+      throw new Error("المريض غير موجود");
+    }
 
     const appointments = await db.appointment.findMany({
       where: { patientId: patient.id },

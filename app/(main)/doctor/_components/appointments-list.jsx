@@ -38,14 +38,11 @@ export default function DoctorAppointmentsList() {
           <div className="space-y-6">
             {appointments.map((appointment) => (
               <div key={appointment.id}>
-                {/* بطاقة الموعد الأصلية */}
                 <AppointmentCard
                   appointment={appointment}
                   userRole="DOCTOR"
                   refetchAppointments={fetchAppointments}
                 />
-
-                {/* قسم الدفع */}
                 <PaymentSuggestion
                   payment={appointment.payment}
                   appointmentId={appointment.id}

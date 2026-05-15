@@ -81,6 +81,7 @@ model Appointment {
   patientDescription String?
   videoSessionId     String?
   videoSessionToken  String?
+  videoCallStatus    VideoCallStatus?  @default(WAITING)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   cancellationReason String?
@@ -95,6 +96,14 @@ model Appointment {
   @@index([status, startTime])
   @@index([doctorId, startTime])
   @@index([patientId, startTime])
+}
+
+enum VideoCallStatus {
+  WAITING
+  DOCTOR_JOINED
+  PATIENT_JOINED
+  IN_PROGRESS
+  ENDED
 }
 
 model Conversation {
