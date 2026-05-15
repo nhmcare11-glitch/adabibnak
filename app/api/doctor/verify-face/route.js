@@ -4,25 +4,19 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 
 export async function POST(req) {
-
   try {
 
     // =========================
     // AUTH
     // =========================
 
-   
-const session = await auth();
-
-const userId = session.userId;
-
+    const { userId } = auth();
 
     if (!userId) {
-
       return NextResponse.json(
         {
           success: false,
-          message: "Unauthorized",
+          error: "Unauthorized",
         },
         { status: 401 }
       );
@@ -37,11 +31,10 @@ const userId = session.userId;
     const { descriptor } = body;
 
     if (!descriptor) {
-
       return NextResponse.json(
         {
           success: false,
-          message: "No descriptor",
+          error: "No descriptor",
         },
         { status: 400 }
       );
@@ -58,11 +51,10 @@ const userId = session.userId;
     });
 
     if (!user) {
-
       return NextResponse.json(
         {
           success: false,
-          message: "User not found",
+          error: "User not found",
         },
         { status: 404 }
       );
@@ -73,18 +65,15 @@ const userId = session.userId;
     // =========================
 
     await db.doctorFaceVerification.upsert({
-
       where: {
         doctorId: user.id,
       },
-
       update: {
         faceEmbedding: descriptor,
         isVerified: true,
         enrolledAt: new Date(),
         failedAttempts: 0,
       },
-
       create: {
         doctorId: user.id,
         faceEmbedding: descriptor,
@@ -95,23 +84,22 @@ const userId = session.userId;
 
     return NextResponse.json({
       success: true,
-      message: "Face enrolled successfully",
+      message: "Face registered successfully",
     });
 
   } catch (error) {
 
-    console.error(
-      "FACE VERIFICATION ERROR:",
-      error
-    );
+    console.log("VERIFY FACE ERROR:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Server error",
+        error: "Server error",
       },
       { status: 500 }
     );
   }
 }
+
+
 

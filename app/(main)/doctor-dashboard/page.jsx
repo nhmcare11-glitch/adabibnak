@@ -1,75 +1,74 @@
+
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+
 import { db } from "@/lib/prisma";
-// ✅ الإصلاح الرئيسي: استيراد من availability.js (تأخذ clerkUserId)
-// وليس من doctor.js (التي تأخذ لا شيء وتستخدم auth داخلياً)
-import { getDoctorAvailability } from "@/actions/availability";
+
 import DoctorDashboardClient from "./_components/doctor-dashboard-client";
 
-export default async function DoctorDashboardPage() {
+import FaceProtection from "@/components/doctor/FaceProtection";
+
+export default async function DoctorDashboardPage(props) {
+
+  // =========================
+  // AUTH
+  // =========================
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
 
-  // جلب بيانات الطبيب
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // =========================
+  // GET USER
+  // =========================
   const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user || user.role !== "DOCTOR") redirect("/");
-  const verification = await db.doctorFaceVerification.findUnique({
-  where: {
-    doctorId: user.id,
-  },
-});
-
-if (!verification?.isVerified) {
-  redirect("/doctor/verification");
-}
-
-  // جلب المواعيد مع بيانات المريض والدفع
-  const appointments = await db.appointment.findMany({
-    where: { doctorId: user.id },
-    include: {
-      patient: {
-        include: { patientProfile: true },
-      },
-      prescription: true,
-      payment:      true,
-    },
-    orderBy: { startTime: "desc" },
-  });
-
-  // ✅ استخدام getDoctorAvailability الصحيحة من availability.js
-  // تأخذ clerkUserId وتبحث عن الطبيب بنفسها
-  const availabilitySlots = await getDoctorAvailability(userId);
-
-  // جلب الإشعارات غير المقروءة للطبيب
-  const notifications = await db.notification.findMany({
     where: {
-      userId:  user.id,
-      isRead:  false,
+      clerkUserId: userId,
     },
-    orderBy: { createdAt: "desc" },
-    take: 20,
   });
 
-  // جلب المحادثات
-  const conversations = await db.conversation.findMany({
-    where: { doctorId: user.id },
-    include: {
-      patient:  { select: { id: true, name: true, imageUrl: true } },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+  if (!user) {
+    redirect("/onboarding");
+  }
 
+  // =========================
+  // ONLY DOCTOR
+  // =========================
+  if (user.role !== "DOCTOR") {
+    redirect("/");
+  }
+
+  // =========================
+  // FACE VERIFICATION CHECK
+  // =========================
+  const verification =
+    await db.doctorFaceVerification.findUnique({
+      where: {
+        doctorId: user.id,
+      },
+    });
+
+  // الطبيب لم يسجل وجهه بعد
+  if (!verification) {
+    redirect("/doctor/verification");
+  }
+
+  // الطبيب غير مقبول بعد
+  if (!verification.isVerified) {
+    redirect("/doctor/verification");
+  }
+
+  // =========================
+  // DASHBOARD
+  // =========================
   return (
-    <DoctorDashboardClient
-      user={user}
-      appointments={JSON.parse(JSON.stringify(appointments))}
-      availabilitySlots={JSON.parse(JSON.stringify(availabilitySlots))}
-      conversations={JSON.parse(JSON.stringify(conversations))}
-      notifications={JSON.parse(JSON.stringify(notifications))}
-    />
+    <>
+      <FaceProtection />
+
+      <DoctorDashboardClient
+        {...props}
+      />
+    </>
   );
 }

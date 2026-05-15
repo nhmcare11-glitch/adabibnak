@@ -1,186 +1,253 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import * as faceapi from "face-api.js";
 
-export default function VerificationPage() {
+export default function DoctorVerificationPage() {
+
+  const router = useRouter();
+
   const videoRef = useRef(null);
-  const canvasRef = useRef(null);
 
-  const [captured, setCaptured] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
+  const [modelsLoaded, setModelsLoaded] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  // =========================
+  // LOAD FACE MODELS
+  // =========================
   useEffect(() => {
-    loadModels();
-    startCamera();
 
-    return () => {
-      stopCamera();
+    const loadModels = async () => {
+
+      try {
+
+        await faceapi
+          .nets
+          .tinyFaceDetector
+          .loadFromUri("/models");
+
+        await faceapi
+          .nets
+          .faceLandmark68Net
+          .loadFromUri("/models");
+
+        await faceapi
+          .nets
+          .faceRecognitionNet
+          .loadFromUri("/models");
+
+        setModelsLoaded(true);
+
+      } catch (error) {
+
+        console.error(error);
+
+        setMessage(
+          "Failed to load AI models"
+        );
+      }
     };
+
+    loadModels();
+
   }, []);
 
-  const loadModels = async () => {
-    const MODEL_URL = "/models";
+  // =========================
+  // START CAMERA
+  // =========================
+  useEffect(() => {
 
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-    ]);
+    if (!modelsLoaded) return;
 
-    console.log("FaceAPI Models Loaded");
-    setModelsLoaded(true);
-  };
+    startCamera();
+
+  }, [modelsLoaded]);
 
   const startCamera = async () => {
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
-      });
+
+      const stream =
+        await navigator.mediaDevices
+          .getUserMedia({
+            video: true,
+          });
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
 
-        videoRef.current.onloadedmetadata = async () => {
-          await videoRef.current.play();
-        };
+        videoRef.current.srcObject =
+          stream;
       }
+
     } catch (error) {
+
       console.error(error);
-      alert("Camera Error");
-    }
-  };
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-
-      tracks.forEach((track) => track.stop());
-    }
-  };
-
-  const captureFace = async () => {
-    if (!modelsLoaded) {
-      alert("Models are still loading...");
-      return;
-    }
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-
-    if (!video || !canvas) return;
-
-    setLoading(true);
-
-    try {
-      const detection = await faceapi
-        .detectSingleFace(
-          video,
-          new faceapi.TinyFaceDetectorOptions()
-        )
-        .withFaceLandmarks()
-        .withFaceDescriptor();
-
-      if (!detection) {
-        alert("No face detected");
-        setLoading(false);
-        return;
-      }
-
-      const context = canvas.getContext("2d");
-
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = canvas.toDataURL("image/png");
-
-      setCaptured(imageData);
-
-      const descriptor = Array.from(detection.descriptor);
-
-      const doctorId ="5aebd33f-9eab-4a53-9bec-5bba508091f8"
-
-      const response = await fetch(
-        "/api/doctor/face-verification",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            doctorId,
-            image: imageData,
-            descriptor,
-          }),
-        }
+      setMessage(
+        "Camera access denied"
       );
-
-      const data = await response.json();
-
-      console.log(data);
-
-      alert("Face Registered Successfully");
-
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-      setLoading(false);
     }
   };
+
+  // =========================
+  // FACE ENROLLMENT
+  // =========================
+  const handleVerification =
+    async () => {
+
+      try {
+
+        setLoading(true);
+
+        setMessage("");
+
+        const detection =
+          await faceapi
+            .detectSingleFace(
+              videoRef.current,
+              new faceapi
+                .TinyFaceDetectorOptions()
+            )
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        // لا يوجد وجه
+        if (!detection) {
+
+          setMessage(
+            "No face detected"
+          );
+
+          setLoading(false);
+
+          return;
+        }
+
+        // descriptor
+        const descriptor =
+          Array.from(
+            detection.descriptor
+          );
+
+        // إرسال للـ API
+        const response =
+          await fetch(
+            "/api/doctor/face-verification",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                descriptor,
+              }),
+            }
+          );
+
+
+const rawText = await response.text();
+
+console.log("RAW RESPONSE:", rawText);
+
+let data;
+
+try {
+  data = JSON.parse(rawText);
+} catch (error) {
+  setMessage("Invalid server response");
+  console.log(error);
+  return;
+}
+
+
+
+        // فشل
+        if (!data.success) {
+
+          setMessage(
+            data.message ||
+            "Verification failed"
+          );
+
+          setLoading(false);
+
+          return;
+        }
+
+        // نجاح
+        setMessage(
+          "Face enrolled successfully"
+        );
+
+        // انتظار بسيط
+        setTimeout(() => {
+
+          router.push(
+            "/waiting-approval"
+          );
+
+        }, 1500);
+
+      } catch (error) {
+
+        console.error(error);
+
+        setMessage(
+          "Verification error"
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
 
   return (
-    <div className="min-h-screen bg-[#edf4f3] flex items-center justify-center p-6">
-      <div className="bg-white rounded-[32px] shadow-2xl p-8 w-full max-w-md">
-        <h1 className="text-6xl font-black text-center text-[#0b132b] leading-none">
-          Face
-          <br />
-          Verification
-        </h1>
 
-        <p className="text-center text-[#8f9bb3] mt-6 mb-8 text-lg">
-          قم بتوثيق هويتك عبر التعرف على الوجه
-        </p>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
 
-        <div className="bg-[#e7efee] rounded-[30px] p-4">
-          {!captured ? (
-            <>
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-[350px] object-cover rounded-[24px] bg-black"
-              />
+      <h1 className="text-5xl font-bold mb-10 text-center">
+        Doctor Face Verification
+      </h1>
 
-              <button
-                onClick={captureFace}
-                disabled={loading}
-                className="w-full mt-4 bg-[#17b8ab] hover:bg-[#10998f] text-white font-bold py-4 rounded-2xl transition"
-              >
-                {loading ? "Scanning..." : "Scan My Face"}
-              </button>
-            </>
-          ) : (
-            <>
-              <img
-                src={captured}
-                alt="captured"
-                className="w-full h-[350px] object-cover rounded-[24px]"
-              />
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        className="w-full max-w-2xl rounded-3xl border border-white/10"
+      />
 
-              <p className="text-center text-green-600 font-semibold mt-4">
-                تم حفظ البصمة الوجهية بنجاح
-              </p>
-            </>
-          )}
-        </div>
+      <p className="mt-6 text-lg text-red-400">
+        {message}
+      </p>
 
-        <canvas ref={canvasRef} className="hidden" />
-      </div>
+      <button
+        onClick={handleVerification}
+        disabled={
+          loading ||
+          !modelsLoaded
+        }
+        className="mt-6 px-8 py-4 rounded-2xl bg-white text-black font-bold text-lg"
+      >
+
+        {loading
+          ? "Processing..."
+          : "Verify Face"}
+
+      </button>
+
     </div>
   );
 }

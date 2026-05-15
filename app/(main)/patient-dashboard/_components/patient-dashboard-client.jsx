@@ -7,7 +7,7 @@ import { ar } from "date-fns/locale";
 import {
   Calendar, Clock, Stethoscope, FileText, Pill, ChevronRight,
   CheckCircle, CalendarClock, Activity, Plus, Bell,
-  LayoutDashboard, MessageSquare, Settings, LogOut, Menu, X,
+  LayoutDashboard, MessageSquare, Settings,  Menu, X,
   User, Camera, Edit3, Phone, Mail, MapPin, Save,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +18,7 @@ import PatientPaymentCard from "./PatientPaymentCard";
 import { updatePatientProfile } from "@/actions/patient-dashboard";
 import InteractiveBodySection from "./InteractiveBodySection";
 
+import LogoutButton from "@/components/shared/LogoutButton";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -113,15 +114,9 @@ function Sidebar({ user, activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       </nav>
 
       {/* Logout */}
-      <div className="px-3 pb-5" style={{borderTop:"1px solid rgba(255,255,255,0.06)"}}>
-        <a href="/sign-out"
-          className="w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13.5px] font-medium transition-all mt-3"
-          style={{color:"rgba(252,165,165,0.7)"}}
-          onMouseEnter={e=>{e.currentTarget.style.background="rgba(239,68,68,0.12)";e.currentTarget.style.color="#fca5a5";}}
-          onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(252,165,165,0.7)";}}>
-          <LogOut className="h-[18px] w-[18px]"/><span>تسجيل الخروج</span>
-        </a>
-      </div>
+        <LogoutButton
+  className="w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13.5px] font-medium transition-all mt-3"
+ />
     </div>
   );
 
@@ -219,13 +214,9 @@ function TopHeader({ user, setMobileOpen, setActiveTab }) {
                   <LayoutDashboard className="h-4 w-4" style={{color:C.primary}}/>لوحة التحكم
                 </button>
                 <div style={{borderTop:"1px solid #ccfbf1",margin:"6px 0"}}/>
-                <a href="/sign-out"
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors text-right"
-                  style={{color:"#dc2626"}}
-                  onMouseEnter={e=>{e.currentTarget.style.background="#fef2f2";}}
-                  onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}>
-                  <LogOut className="h-4 w-4"/>تسجيل الخروج
-                </a>
+                <LogoutButton
+  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors text-right"
+/>
               </div>
             </div>
           )}

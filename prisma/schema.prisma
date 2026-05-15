@@ -1,43 +1,65 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
 // USER
 // ============================================================
+
 model User {
   id                   String              @id @default(uuid())
   clerkUserId          String              @unique
   email                String              @unique
   name                 String?
   imageUrl             String?
+
   role                 UserRole            @default(UNASSIGNED)
+
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
+
   specialty            String?
   experience           Int?
   credentialUrl        String?
   description          String?
+
   verificationStatus   VerificationStatus? @default(PENDING)
+
   age                  Int?
   bloodType            String?
 
+  // =========================
+  // FACE VERIFICATION
+  // =========================
+  faceVerification     DoctorFaceVerification?
+
+  // =========================
+  // RELATIONS
+  // =========================
   doctorAppointments   Appointment[]       @relation("DoctorAppointments")
   patientAppointments  Appointment[]       @relation("PatientAppointments")
+
   availabilities       Availability[]
+
   doctorConversations  Conversation[]      @relation("DoctorConversations")
   patientConversations Conversation[]      @relation("PatientConversations")
+
   sentMessages         Message[]           @relation("SentMessages")
-  Notification         Notification[]
+
+  notifications        Notification[]
+
   doctorPrescriptions  Prescription[]      @relation("DoctorPrescriptions")
   patientPrescriptions Prescription[]      @relation("PatientPrescriptions")
+
   patientProfile       PatientProfile?
+
   approvedPayments     Payment[]           @relation("ApprovedPayments")
+
   salariesAsSecretary  SecretarySalary[]   @relation("SecretarySalaries")
   salariesApprovedBy   SecretarySalary[]   @relation("SalaryApprovedBy")
 
@@ -45,14 +67,43 @@ model User {
 }
 
 // ============================================================
+// DOCTOR FACE VERIFICATION
+// ============================================================
+
+model DoctorFaceVerification {
+  id              String   @id @default(uuid())
+
+  doctorId        String   @unique
+
+  faceEmbedding   Json?
+  failedAttempts  Int      @default(0)
+  enrolledAt      DateTime?
+
+  isVerified      Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  doctor User @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@index([isVerified])
+}
+
+// ============================================================
 // AVAILABILITY
 // ============================================================
+
 model Availability {
   id        String     @id @default(uuid())
+
   doctorId  String
+
   startTime DateTime
   endTime   DateTime
+
   status    SlotStatus @default(AVAILABLE)
+
   doctor    User       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@index([doctorId, startTime])
@@ -62,26 +113,37 @@ model Availability {
 // ============================================================
 // APPOINTMENT
 // ============================================================
+
 model Appointment {
   id                 String              @id @default(uuid())
+
   patientId          String
   doctorId           String
+
   startTime          DateTime
   endTime            DateTime
+
   status             AppointmentStatus   @default(SCHEDULED)
-  consultationType   ConsultationType    @default(REMOTE)   // ← جديد
-  duration           Int                 @default(30)        // ← جديد بالدقائق
+
+  consultationType   ConsultationType    @default(REMOTE)
+  duration           Int                 @default(30)
+
   notes              String?
   patientDescription String?
+
   videoSessionId     String?
   videoSessionToken  String?
+
   cancellationReason String?
+
   rating             Int?
+
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
-  doctor       User          @relation("DoctorAppointments",  fields: [doctorId],  references: [id])
+  doctor       User          @relation("DoctorAppointments", fields: [doctorId], references: [id])
   patient      User          @relation("PatientAppointments", fields: [patientId], references: [id])
+
   prescription Prescription?
   payment      Payment?
 
@@ -93,19 +155,25 @@ model Appointment {
 // ============================================================
 // CONVERSATION
 // ============================================================
+
 model Conversation {
   id          String    @id @default(uuid())
+
   doctorId    String
   patientId   String
+
   lastMessage String?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  doctor   User      @relation("DoctorConversations",  fields: [doctorId],  references: [id])
+  doctor   User      @relation("DoctorConversations", fields: [doctorId], references: [id])
   patient  User      @relation("PatientConversations", fields: [patientId], references: [id])
+
   messages Message[]
 
   @@unique([doctorId, patientId])
+
   @@index([doctorId])
   @@index([patientId])
   @@index([updatedAt])
@@ -114,16 +182,23 @@ model Conversation {
 // ============================================================
 // MESSAGE
 // ============================================================
+
 model Message {
   id             String       @id @default(uuid())
+
   conversationId String
   senderId       String
+
   content        String
+
   files          Json?
+
   read           Boolean      @default(false)
+
   createdAt      DateTime     @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
   sender       User         @relation("SentMessages", fields: [senderId], references: [id])
 
   @@index([conversationId, createdAt])
@@ -133,51 +208,75 @@ model Message {
 // ============================================================
 // PRESCRIPTION
 // ============================================================
+
 model Prescription {
   id            String      @id @default(uuid())
+
   appointmentId String      @unique
+
   doctorId      String
   patientId     String
+
   diagnosis     String?
+
   medications   Json
+
   instructions  String?
+
   followUpDate  DateTime?
+
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor      User        @relation("DoctorPrescriptions",  fields: [doctorId],  references: [id])
+
+  doctor      User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+
   patient     User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
 }
 
 // ============================================================
 // REPORT
 // ============================================================
+
 model Report {
   id        String   @id @default(uuid())
+
   name      String
+
   type      String   @default("PDF")
+
   status    String   @default("مكتمل")
+
   fileUrl   String?
+
   content   String?
+
   createdAt DateTime @default(now())
 }
 
 // ============================================================
 // NOTIFICATION
 // ============================================================
+
 model Notification {
   id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+
   userId    String
+
   type      String
   title     String
   message   String
+
   isRead    Boolean  @default(false)
+
   link      String?
+
   metadata  Json?
+
   createdAt DateTime @default(now())
 
-  User User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
@@ -187,17 +286,24 @@ model Notification {
 // ============================================================
 // PATIENT PROFILE
 // ============================================================
+
 model PatientProfile {
   id                String      @id @default(uuid())
+
   userId            String      @unique
+
   incomeLevel       IncomeLevel @default(MEDIUM)
+
   hasInsurance      Boolean     @default(false)
   hasChronicDisease Boolean     @default(false)
   isEmergency       Boolean     @default(false)
+
   phone             String?
   city              String?
+
   latitude          Float?
   longitude         Float?
+
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
@@ -207,47 +313,72 @@ model PatientProfile {
 // ============================================================
 // PAYMENT
 // ============================================================
+
 model Payment {
   id              String         @id @default(uuid())
+
   appointmentId   String         @unique
+
   suggestedMethod PaymentMethod
+
   approvedMethod  PaymentMethod?
+
   status          PaymentStatus  @default(PENDING_APPROVAL)
+
   approvedById    String?
+
   approvedAt      DateTime?
+
   amount          Float?
+
   adminCommission Float?
+
   notes           String?
+
   paypalOrderId   String?        @unique
   paypalStatus    String?
+
   paidAt          DateTime?
+
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
   approvedBy  User?       @relation("ApprovedPayments", fields: [approvedById], references: [id])
 }
 
 // ============================================================
 // SECRETARY SALARY
 // ============================================================
+
 model SecretarySalary {
   id           String       @id @default(uuid())
+
   secretaryId  String
+
   amount       Float
+
   month        Int
   year         Int
+
   status       SalaryStatus @default(PENDING)
+
   paidAt       DateTime?
+
   approvedById String?
+
   notes        String?
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  secretary  User  @relation("SecretarySalaries", fields: [secretaryId],  references: [id])
-  approvedBy User? @relation("SalaryApprovedBy",  fields: [approvedById], references: [id])
+  secretary  User  @relation("SecretarySalaries", fields: [secretaryId], references: [id])
+
+  approvedBy User? @relation("SalaryApprovedBy", fields: [approvedById], references: [id])
 
   @@unique([secretaryId, month, year])
+
   @@index([secretaryId])
   @@index([status])
 }
@@ -280,15 +411,15 @@ enum SlotStatus {
 
 enum AppointmentStatus {
   SCHEDULED
-  ONGOING      // ← جديد: الجلسة جارية الآن
+  ONGOING
   COMPLETED
   CANCELLED
-  MISSED       // ← جديد: لم يحضر أحد الطرفين
+  MISSED
 }
 
 enum ConsultationType {
-  REMOTE       // ← جديد: استشارة عن بُعد
-  IN_PERSON    // ← جديد: حضوري
+  REMOTE
+  IN_PERSON
 }
 
 enum IncomeLevel {

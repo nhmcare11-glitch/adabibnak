@@ -15,6 +15,26 @@ import {
 import { createNotification } from "./notifications";
 
 // ============================================================
+// SMS — نستورد من lib/sms و lib/sms-messages
+// ============================================================
+import { sendSMS } from "@/lib/sms";
+import {
+  msgAppointmentBooked,
+  msgNewAppointmentForDoctor,
+} from "@/lib/sms-messages";
+
+// ============================================================
+// helper — جلب رقم هاتف المريض من PatientProfile
+// ============================================================
+async function getPatientPhone(patientId) {
+  const profile = await db.patientProfile.findUnique({
+    where: { userId: patientId },
+    select: { phone: true },
+  });
+  return profile?.phone || null;
+}
+
+// ============================================================
 // bookAppointment
 // ============================================================
 export async function bookAppointment(formData) {
@@ -283,7 +303,7 @@ export async function bookAppointment(formData) {
     );
 
     // ============================================================
-    // NOTIFICATIONS
+    // NOTIFICATIONS (in-app) — نفس الكود القديم
     // ============================================================
     await Promise.all([
       createNotification({
@@ -338,6 +358,38 @@ export async function bookAppointment(formData) {
         },
       }),
     ]);
+
+    // ============================================================
+    // SMS — نرسل بعد نجاح كل شي
+    // نجيب رقم المريض من PatientProfile
+    // ============================================================
+    const patientPhone = await getPatientPhone(result.patient.id);
+
+    if (patientPhone) {
+      // SMS للمريض
+      await sendSMS(
+        patientPhone,
+        msgAppointmentBooked({
+          patientName: result.patient.name || "المريض",
+          doctorName: result.doctor.name || "الطبيب",
+          startTime,
+        })
+      );
+    }
+
+    // SMS للطبيب — نجيب رقمه من PatientProfile إن وجد
+    // (الطبيب ممكن يكون عنده profile مستقبلاً، حالياً نتجاهل إن ما كانش)
+    const doctorPhone = await getPatientPhone(result.doctor.id);
+    if (doctorPhone) {
+      await sendSMS(
+        doctorPhone,
+        msgNewAppointmentForDoctor({
+          doctorName: result.doctor.name || "الطبيب",
+          patientName: result.patient.name || "المريض",
+          startTime,
+        })
+      );
+    }
 
     // ============================================================
     // REVALIDATE

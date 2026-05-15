@@ -35,9 +35,9 @@ import {
   Search, MoreVertical, Trash2, Edit, RefreshCw, PieChart
 } from "lucide-react";
 
-// ============================================================
-// CSS Styles
-// ============================================================
+import LogoutButton from "@/components/shared/LogoutButton";
+
+
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
 
@@ -1207,9 +1207,25 @@ export default function AdminDashboard({ stats, pendingDoctors, verifiedDoctors 
               <Settings size={16} /> الإعدادات
             </div>
           </div>
-          <div className="home-btn" onClick={() => window.location.href = '/'}>
-            <Home size={16} /> الصفحة الرئيسية
-          </div>
+           <div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  }}
+>
+
+  <div
+    className="home-btn"
+    onClick={() => window.location.href = "/"}
+  >
+    <Home size={16} />
+    الصفحة الرئيسية
+  </div>
+
+  <LogoutButton className="home-btn" />
+
+</div>
         </div>
 
         <div className="main-content">

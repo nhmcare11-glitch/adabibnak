@@ -6,6 +6,7 @@ export const revalidate = 60;
 
 export default async function VerificationManagerPage() {
   const isAllowed = await verifyVerificationManager();
+  console.log("isAllowed:", isAllowed); // ← زيدي هذا
   if (!isAllowed) redirect("/");
 
   const [stats, pendingDoctors, verifiedDoctors, rejectedDoctors] = await Promise.all([

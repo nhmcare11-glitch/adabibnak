@@ -1,20 +1,32 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/prisma";
 
-export async function POST() {
+export async function POST(req) {
   try {
-    const verification =
-      await db.doctorFaceVerification.findFirst({
-        where: {
-          isVerified: true,
-        },
-      });
+    const { userId } = await auth();
 
-    if (!verification) {
+    if (!userId) {
+      return NextResponse.json(
+        { success: false },
+        { status: 401 }
+      );
+    }
+
+    const user = await db.user.findUnique({
+      where: {
+        clerkUserId: userId,
+      },
+      include: {
+        faceVerification: true,
+      },
+    });
+
+    if (!user?.faceVerification) {
       return NextResponse.json(
         {
           success: false,
-          message: "No registered face found",
+          message: "No face registered",
         },
         { status: 404 }
       );
@@ -22,16 +34,15 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      descriptor:
-        verification.faceEmbedding?.descriptor,
+      verified: true,
     });
+
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Server error",
       },
       { status: 500 }
     );

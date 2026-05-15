@@ -1,33 +1,63 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import {
+  clerkMiddleware,
+  createRouteMatcher,
+} from "@clerk/nextjs/server";
+
 import { NextResponse } from "next/server";
 
-// كل الصفحات اللي تحتاج تسجيل دخول
 const isProtectedRoute = createRouteMatcher([
-  "/doctors(.*)",
-  "/onboarding(.*)",
+  "/doctor-dashboard(.*)",
   "/doctor(.*)",
   "/admin(.*)",
-  "/video-call(.*)",
   "/appointments(.*)",
+  "/video-call(.*)",
   "/secretary-dashboard(.*)",
-  "/verification-manager(.*)",   // ← جديد: صفحات مدير التحقق
+  "/verification-manager(.*)",
+  "/onboarding(.*)",
+  "/doctors(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+
   const { userId } = await auth();
 
-  // إذا المستخدم مش مسجل دخول وحاول يفتح صفحة محمية
+  // المستخدم غير مسجل ويحاول دخول Route محمي
   if (!userId && isProtectedRoute(req)) {
+
     const { redirectToSignIn } = await auth();
-    return redirectToSignIn();
+
+    return redirectToSignIn({
+      returnBackUrl: req.url,
+    });
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // منع تخزين صفحات الداشبورد والكاش
+  if (isProtectedRoute(req)) {
+
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+
+    response.headers.set(
+      "Pragma",
+      "no-cache"
+    );
+
+    response.headers.set(
+      "Expires",
+      "0"
+    );
+  }
+
+  return response;
 });
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpg|jpeg|png|gif|svg|ico|woff2?|ttf|map)).*)",
     "/(api|trpc)(.*)",
   ],
 };

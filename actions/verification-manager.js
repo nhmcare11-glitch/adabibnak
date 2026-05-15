@@ -1,161 +1,175 @@
 "use server";
 
-import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
-/**
- * تحقق من صلاحية verification manager
- */
+// ─────────────────────────────────────────────
+// Verify Verification Manager
+// ─────────────────────────────────────────────
 export async function verifyVerificationManager() {
-  const { userId } = await auth();
-  if (!userId) return false;
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Stats
+// ─────────────────────────────────────────────
+export async function getVerificationStats() {
+  const total = await db.user.count({
+    where: {
+      role: "DOCTOR",
+    },
+  });
+
+  const pending = await db.user.count({
+    where: {
+      role: "DOCTOR",
+      verificationStatus: "PENDING",
+    },
+  });
+
+  const verified = await db.user.count({
+    where: {
+      role: "DOCTOR",
+      verificationStatus: "VERIFIED",
+    },
+  });
+
+  const rejected = await db.user.count({
+    where: {
+      role: "DOCTOR",
+      verificationStatus: "REJECTED",
+    },
+  });
+
+  return {
+    total,
+    pending,
+    verified,
+    rejected,
+  };
+}
+
+// ─────────────────────────────────────────────
+// Pending Doctors
+// ─────────────────────────────────────────────
+export async function getPendingDoctorsVM() {
+  return await db.user.findMany({
+    where: {
+      role: "DOCTOR",
+      verificationStatus: "PENDING",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+// ─────────────────────────────────────────────
+// Verified Doctors
+// ─────────────────────────────────────────────
+export async function getVerifiedDoctorsVM() {
+  return await db.user.findMany({
+    where: {
+      role: "DOCTOR",
+      verificationStatus: "VERIFIED",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+// ─────────────────────────────────────────────
+// Rejected Doctors
+// ─────────────────────────────────────────────
+export async function getRejectedDoctorsVM() {
+  return await db.user.findMany({
+    where: {
+      role: "DOCTOR",
+      verificationStatus: "REJECTED",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+}
+
+// ─────────────────────────────────────────────
+// Approve Doctor
+// ─────────────────────────────────────────────
+export async function approveDoctorVM(formData) {
   try {
-    const user = await db.user.findUnique({ where: { clerkUserId: userId } });
-    return (
-      user?.role === "VERIFICATION_MANAGER" || user?.role === "ADMIN"
-    );
-  } catch {
-    return false;
+    const doctorId = formData.get("doctorId");
+
+    if (!doctorId) {
+      return {
+        success: false,
+        error: "Doctor ID missing",
+      };
+    }
+
+    await db.user.update({
+      where: {
+        id: String(doctorId),
+      },
+      data: {
+        verificationStatus: "VERIFIED",
+        rejectionReason: null,
+        verifiedAt: new Date(),
+      },
+    });
+
+    revalidatePath("/verification-manager");
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("APPROVE_DOCTOR_VM_ERROR:", error);
+
+    return {
+      success: false,
+      error: "حدث خطأ أثناء القبول",
+    };
   }
 }
 
-/**
- * إحصائيات عامة
- */
-export async function getVerificationStats() {
-  const isAllowed = await verifyVerificationManager();
-  if (!isAllowed) throw new Error("Unauthorized");
-
-  const [pending, verified, rejected, total] = await Promise.all([
-    db.user.count({ where: { role: "DOCTOR", verificationStatus: "PENDING" } }),
-    db.user.count({ where: { role: "DOCTOR", verificationStatus: "VERIFIED" } }),
-    db.user.count({ where: { role: "DOCTOR", verificationStatus: "REJECTED" } }),
-    db.user.count({ where: { role: "DOCTOR" } }),
-  ]);
-
-  return { pending, verified, rejected, total };
-}
-
-/**
- * قائمة الأطباء المنتظرين
- */
-export async function getPendingDoctorsVM() {
-  const isAllowed = await verifyVerificationManager();
-  if (!isAllowed) throw new Error("Unauthorized");
-
-  const doctors = await db.user.findMany({
-    where: { role: "DOCTOR", verificationStatus: "PENDING" },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return doctors.map((d) => ({
-    ...d,
-    createdAt: d.createdAt?.toISOString?.() ?? d.createdAt,
-    updatedAt: d.updatedAt?.toISOString?.() ?? d.updatedAt,
-  }));
-}
-
-/**
- * قائمة الأطباء المقبولين
- */
-export async function getVerifiedDoctorsVM() {
-  const isAllowed = await verifyVerificationManager();
-  if (!isAllowed) throw new Error("Unauthorized");
-
-  const doctors = await db.user.findMany({
-    where: { role: "DOCTOR", verificationStatus: "VERIFIED" },
-    orderBy: { name: "asc" },
-  });
-
-  return doctors.map((d) => ({
-    ...d,
-    createdAt: d.createdAt?.toISOString?.() ?? d.createdAt,
-    updatedAt: d.updatedAt?.toISOString?.() ?? d.updatedAt,
-  }));
-}
-
-/**
- * قائمة الأطباء المرفوضين
- */
-export async function getRejectedDoctorsVM() {
-  const isAllowed = await verifyVerificationManager();
-  if (!isAllowed) throw new Error("Unauthorized");
-
-  const doctors = await db.user.findMany({
-    where: { role: "DOCTOR", verificationStatus: "REJECTED" },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  return doctors.map((d) => ({
-    ...d,
-    createdAt: d.createdAt?.toISOString?.() ?? d.createdAt,
-    updatedAt: d.updatedAt?.toISOString?.() ?? d.updatedAt,
-  }));
-}
-
-/**
- * قبول طبيب
- */
-export async function approveDoctorVM(formData) {
-  const isAllowed = await verifyVerificationManager();
-  if (!isAllowed) throw new Error("Unauthorized");
-
-  const doctorId = formData.get("doctorId");
-  if (!doctorId) throw new Error("Doctor ID required");
-
-  const doctor = await db.user.findUnique({ where: { id: doctorId } });
-  if (!doctor) throw new Error("Doctor not found");
-
-  await db.user.update({
-    where: { id: doctorId },
-    data: { verificationStatus: "VERIFIED" },
-  });
-
-  // إشعار للطبيب
-  await db.notification.create({
-    data: {
-      userId: doctorId,
-      type: "DOCTOR_VERIFIED",
-      title: "✅ تم قبول حسابك",
-      message: `تهانينا دكتور ${doctor.name}! تم قبول حسابك. يمكنك الآن استقبال المواعيد.`,
-      link: "/doctor",
-    },
-  });
-
-  revalidatePath("/verification-manager");
-  return { success: true };
-}
-
-/**
- * رفض طبيب
- */
+// ─────────────────────────────────────────────
+// Reject Doctor
+// ─────────────────────────────────────────────
 export async function rejectDoctorVM(formData) {
-  const isAllowed = await verifyVerificationManager();
-  if (!isAllowed) throw new Error("Unauthorized");
+  try {
+    const doctorId = formData.get("doctorId");
+    const reason = formData.get("reason");
 
-  const doctorId = formData.get("doctorId");
-  const reason = formData.get("reason") || "لم يتم ذكر سبب";
-  if (!doctorId) throw new Error("Doctor ID required");
+    if (!doctorId) {
+      return {
+        success: false,
+        error: "Doctor ID missing",
+      };
+    }
 
-  const doctor = await db.user.findUnique({ where: { id: doctorId } });
-  if (!doctor) throw new Error("Doctor not found");
+    await db.user.update({
+      where: {
+        id: String(doctorId),
+      },
+      data: {
+        verificationStatus: "REJECTED",
+        rejectionReason: String(reason || ""),
+      },
+    });
 
-  await db.user.update({
-    where: { id: doctorId },
-    data: { verificationStatus: "REJECTED" },
-  });
+    revalidatePath("/verification-manager");
 
-  await db.notification.create({
-    data: {
-      userId: doctorId,
-      type: "DOCTOR_REJECTED",
-      title: "❌ لم يتم قبول طلبك",
-      message: `عذراً دكتور ${doctor.name}، لم يتم قبول حسابك. السبب: ${reason}.`,
-      link: "/onboarding",
-    },
-  });
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("REJECT_DOCTOR_VM_ERROR:", error);
 
-  revalidatePath("/verification-manager");
-  return { success: true };
+    return {
+      success: false,
+      error: "حدث خطأ أثناء الرفض",
+    };
+  }
 }

@@ -1,311 +1,445 @@
+
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as faceapi from "face-api.js";
-import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import * as faceapi from "face-api.js";
+
+import { motion } from "framer-motion";
+
+import {
+  CheckCircle2,
+  ShieldAlert,
+  ScanFace,
+} from "lucide-react";
+
 export default function FaceLoginPage() {
-  const videoRef = useRef(null);
 
   const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
-  const [verified, setVerified] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const videoRef = useRef(null);
 
+  const [loading, setLoading] =
+    useState(true);
+
+  const [cameraStarted, setCameraStarted] =
+    useState(false);
+
+  const [verifying, setVerifying] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState(false);
+
+  // =========================
+  // LOAD MODELS
+  // =========================
   useEffect(() => {
-    loadModels();
-    startCamera();
 
-    return () => {
-      stopCamera();
-    };
+    loadModels();
+
   }, []);
 
   const loadModels = async () => {
-    const MODEL_URL = "/models";
 
-    await faceapi.nets.tinyFaceDetector.loadFromUri(
-      MODEL_URL
-    );
+    try {
 
-    await faceapi.nets.faceLandmark68Net.loadFromUri(
-      MODEL_URL
-    );
+      await Promise.all([
 
-    await faceapi.nets.faceRecognitionNet.loadFromUri(
-      MODEL_URL
-    );
+        faceapi
+          .nets
+          .tinyFaceDetector
+          .loadFromUri("/models"),
 
-    setModelsLoaded(true);
+        faceapi
+          .nets
+          .faceLandmark68Net
+          .loadFromUri("/models"),
+
+        faceapi
+          .nets
+          .faceRecognitionNet
+          .loadFromUri("/models"),
+
+      ]);
+
+      setLoading(false);
+
+    } catch (error) {
+
+      console.error(error);
+
+      setMessage(
+        "Failed to load AI models"
+      );
+    }
   };
 
+  // =========================
+  // START CAMERA
+  // =========================
   const startCamera = async () => {
+
     try {
+
       const stream =
-        await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
+        await navigator
+          .mediaDevices
+          .getUserMedia({
+            video: {
+              width: 1280,
+              height: 720,
+              facingMode: "user",
+            },
+          });
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+
+        videoRef.current.srcObject =
+          stream;
       }
+
+      setCameraStarted(true);
+
     } catch (error) {
-      console.log(error);
+
+      console.error(error);
+
+      alert("Cannot access camera");
     }
   };
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const tracks =
-        videoRef.current.srcObject.getTracks();
-
-      tracks.forEach((track) => track.stop());
-    }
-  };
-
+  // =========================
+  // VERIFY FACE
+  // =========================
   const verifyFace = async () => {
-    try {
-      setLoading(true);
-      setFailed(false);
 
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) return 90;
-          return prev + 10;
-        });
-      }, 150);
+    try {
+
+      setVerifying(true);
+
+      setMessage("");
+
+      if (!videoRef.current) {
+
+        setMessage("Camera not ready");
+
+        setVerifying(false);
+
+        return;
+      }
+
+      // wait little
+      await new Promise((resolve) =>
+        setTimeout(resolve, 1200)
+      );
 
       const detection =
         await faceapi
           .detectSingleFace(
             videoRef.current,
-            new faceapi.TinyFaceDetectorOptions()
+            new faceapi
+              .TinyFaceDetectorOptions({
+                inputSize: 512,
+                scoreThreshold: 0.3,
+              })
           )
           .withFaceLandmarks()
           .withFaceDescriptor();
 
       if (!detection) {
-        clearInterval(interval);
 
-        setLoading(false);
-
-        alert("No face detected");
-
-        return;
-      }
-
-      const currentDescriptor =
-        Array.from(detection.descriptor);
-
-      const response = await fetch(
-        "/api/doctor/face-verification/face-login",
-        {
-          method: "POST",
-        }
-      );
-
-      const data = await response.json();
-
-      clearInterval(interval);
-
-      if (!data.success) {
-        setLoading(false);
-        alert(data.message);
-
-        return;
-      }
-
-      const savedDescriptor =
-        data.descriptor;
-
-      const distance =
-        faceapi.euclideanDistance(
-          currentDescriptor,
-          savedDescriptor
+        setMessage(
+          "No face detected"
         );
 
-      setProgress(100);
+        setVerifying(false);
 
-      // كلما كان أصغر كان أفضل
-      if (distance < 0.5) {
-        setVerified(true);
-
-        setTimeout(() => {
-          router.push("/doctor-dashboard");
-        }, 2500);
-      } else {
-        setFailed(true);
+        return;
       }
 
-      setLoading(false);
+      const descriptor =
+        Array.from(
+          detection.descriptor
+        );
+
+      const response =
+        await fetch(
+          "/api/doctor/face-verification/face-login",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              descriptor,
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+
+        setMessage(
+          data.error ||
+          "Verification failed"
+        );
+
+        setVerifying(false);
+
+        return;
+      }
+
+sessionStorage.setItem(
+  "doctor_face_verified",
+  "true"
+);
+
+      setSuccess(true);
+
+      setMessage(
+        "Biometric identity confirmed"
+      );
+
+      setTimeout(() => {
+
+        router.push(
+          "/doctor-dashboard"
+        );
+
+      }, 1800);
+
     } catch (error) {
-      console.log(error);
 
-      setLoading(false);
+      console.error(error);
 
-      alert("Verification failed");
+      setMessage(
+        "Verification failed"
+      );
+
+    } finally {
+
+      setVerifying(false);
     }
   };
 
+  // =========================
+  // UI
+  // =========================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#dff7f2] via-[#eefcf8] to-[#d8f1eb] flex items-center justify-center p-6">
+
+    <div className="min-h-screen bg-black overflow-hidden relative flex items-center justify-center px-6">
+
+      {/* GRID */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      {/* BACKGROUND GLOW */}
+      <div className="absolute inset-0 overflow-hidden">
+
+        <div className="absolute top-[-200px] left-[-200px] w-[500px] h-[500px] bg-cyan-500/20 blur-[140px] rounded-full" />
+
+        <div className="absolute bottom-[-200px] right-[-200px] w-[500px] h-[500px] bg-blue-500/20 blur-[140px] rounded-full" />
+
+      </div>
+
+      {/* CARD */}
       <motion.div
         initial={{
           opacity: 0,
-          scale: 0.9,
+          y: 40,
         }}
         animate={{
           opacity: 1,
-          scale: 1,
+          y: 0,
         }}
-        className="w-full max-w-md"
+        transition={{
+          duration: 0.6,
+        }}
+        className="relative z-10 w-full max-w-md rounded-[36px] border border-white/10 bg-white/5 backdrop-blur-2xl shadow-[0_0_80px_rgba(0,255,255,0.08)] overflow-hidden"
       >
-        <div className="bg-white/70 backdrop-blur-2xl rounded-[40px] shadow-2xl border border-white/40 overflow-hidden p-8">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg mb-5">
-              <ShieldCheck className="text-white w-10 h-10" />
-            </div>
 
-            <h1 className="text-3xl font-bold text-gray-800">
-              Face Recognition
-            </h1>
+        {/* HEADER */}
+        <div className="p-8 text-center border-b border-white/10">
 
-            <p className="text-gray-500 mt-3">
-              Secure biometric verification
-            </p>
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-cyan-500/10 border border-cyan-400/20">
+
+            <ScanFace
+              size={42}
+              className="text-cyan-400"
+            />
+
           </div>
 
-          <div className="mt-8 relative">
-            <div className="relative rounded-[32px] overflow-hidden border-[6px] border-emerald-300 shadow-xl bg-black">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="w-full h-[420px] object-cover"
-              />
+          <h1 className="text-4xl font-bold text-white">
+            Face Verification
+          </h1>
 
-              {loading && (
-                <motion.div
-                  initial={{ y: -300 }}
-                  animate={{ y: 320 }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 1.8,
-                    ease: "linear",
-                  }}
-                  className="absolute left-0 right-0 h-1 bg-emerald-400"
-                />
-              )}
-            </div>
-          </div>
+          <p className="mt-3 text-zinc-400 text-sm leading-relaxed">
+            Secure biometric authentication
+            for medical dashboard access
+          </p>
 
-          <div className="mt-7">
-            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+        </div>
+
+        {/* AI STATUS */}
+        <div className="flex items-center justify-center gap-2 py-4 text-cyan-400 text-sm font-medium">
+
+          <div className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+
+          AI Face Recognition Active
+
+        </div>
+
+        {/* CAMERA */}
+        <div className="p-6">
+
+          <div className="relative overflow-hidden rounded-[28px] border border-cyan-500/20 bg-black">
+
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              onLoadedMetadata={() => {
+                videoRef.current?.play();
+              }}
+              className="h-[460px] w-full object-cover"
+            />
+
+            {/* FACE FRAME */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+
               <motion.div
                 animate={{
-                  width: `${progress}%`,
+                  opacity: [0.6, 1, 0.6],
                 }}
-                className="h-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                transition={{
+                  repeat: Infinity,
+                  duration: 2,
+                }}
+                className="w-[240px] h-[300px] rounded-[40px] border-[4px] border-cyan-400 shadow-[0_0_40px_rgba(0,255,255,0.7)]"
               />
+
             </div>
 
-            <div className="mt-2 text-center text-sm text-gray-500">
-              {loading
-                ? "Analyzing face..."
-                : modelsLoaded
-                ? "Ready"
-                : "Loading AI models..."}
-            </div>
+            {/* SCAN LINE */}
+            <motion.div
+              animate={{
+                y: [-160, 160],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 2.4,
+                ease: "linear",
+              }}
+              className="absolute left-0 right-0 mx-auto h-[3px] w-[260px] bg-cyan-400 blur-[1px]"
+            />
+
           </div>
 
-          <button
-            onClick={verifyFace}
-            disabled={!modelsLoaded || loading}
-            className="w-full mt-8 h-16 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xl font-semibold shadow-lg"
-          >
-            {loading
-              ? "Verifying..."
-              : "Verify Face"}
-          </button>
         </div>
+
+        {/* ACTIONS */}
+        <div className="px-6 pb-8 text-center">
+
+          {loading && (
+
+            <p className="text-yellow-400 animate-pulse mb-5">
+
+              Loading AI Models...
+
+            </p>
+          )}
+
+          {!loading &&
+            !cameraStarted && (
+
+            <button
+              onClick={startCamera}
+              className="w-full rounded-2xl bg-cyan-500 hover:bg-cyan-400 transition-all duration-300 py-4 text-lg font-bold text-white shadow-[0_0_25px_rgba(0,255,255,0.5)]"
+            >
+
+              Start Camera
+
+            </button>
+          )}
+
+          {!loading &&
+            cameraStarted &&
+            !success && (
+
+            <button
+              onClick={verifyFace}
+              disabled={verifying}
+              className="w-full rounded-2xl bg-white hover:bg-zinc-200 transition-all duration-300 py-4 text-lg font-bold text-black"
+            >
+
+              {verifying
+                ? "Analyzing Biometric Identity..."
+                : "Verify Face"}
+
+            </button>
+          )}
+
+          {/* MESSAGE */}
+          {message && (
+
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 10,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="mt-6"
+            >
+
+              {success ? (
+
+                <div className="flex items-center justify-center gap-2 text-green-400 font-medium">
+
+                  <CheckCircle2 size={22} />
+
+                  <span>
+                    {message}
+                  </span>
+
+                </div>
+
+              ) : (
+
+                <div className="flex items-center justify-center gap-2 text-red-400 font-medium">
+
+                  <ShieldAlert size={22} />
+
+                  <span>
+                    {message}
+                  </span>
+
+                </div>
+
+              )}
+
+            </motion.div>
+          )}
+
+        </div>
+
       </motion.div>
 
-      <AnimatePresence>
-        {verified && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{
-                scale: 0.7,
-                opacity: 0,
-              }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-              }}
-              className="bg-white rounded-[32px] p-10 text-center shadow-2xl"
-            >
-              <CheckCircle2 className="w-24 h-24 text-emerald-500 mx-auto" />
-
-              <h2 className="text-3xl font-bold mt-5">
-                Verified
-              </h2>
-
-              <p className="text-gray-500 mt-3">
-                Redirecting to dashboard...
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {failed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{
-                scale: 0.7,
-                opacity: 0,
-              }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-              }}
-              className="bg-white rounded-[32px] p-10 text-center shadow-2xl"
-            >
-              <XCircle className="w-24 h-24 text-red-500 mx-auto" />
-
-              <h2 className="text-3xl font-bold mt-5 text-red-500">
-                Access Denied
-              </h2>
-
-              <p className="text-gray-500 mt-3">
-                Face does not match
-              </p>
-
-              <button
-                onClick={() => setFailed(false)}
-                className="mt-6 bg-red-500 text-white px-6 py-3 rounded-2xl"
-              >
-                Try Again
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
+

@@ -82,7 +82,7 @@ export default function Home() {
     const redirectByRole = async () => {
       // أولاً جرب من Clerk metadata
       if (role === "PATIENT")              { router.replace("/patient-dashboard"); return; }
-      if (role === "DOCTOR")               { router.replace("/doctor"); return; }
+      if (role === "DOCTOR")               { router.replace("/doctor-dashboard"); return; }
       if (role === "ADMIN")                { router.replace("/admin"); return; }
       if (role === "SECRETARY")            { router.replace("/secretary-dashboard"); return; }
       if (role === "VERIFICATION_MANAGER") { router.replace("/verification-manager"); return; }
@@ -93,7 +93,7 @@ export default function Home() {
           const res = await fetch("/api/check-role");
           const data = await res.json();
           if (data.role === "PATIENT")              router.replace("/patient-dashboard");
-          if (data.role === "DOCTOR")               router.replace("/doctor");
+          if (data.role === "DOCTOR")               router.replace("/doctor-dashboard");
           if (data.role === "ADMIN")                router.replace("/admin");
           if (data.role === "SECRETARY")            router.replace("/secretary-dashboard");
           if (data.role === "VERIFICATION_MANAGER") router.replace("/verification-manager");

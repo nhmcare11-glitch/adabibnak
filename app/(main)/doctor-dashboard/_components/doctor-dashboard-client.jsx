@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { approvePayment, rejectPayment } from "@/actions/payment";
 import dynamic from "next/dynamic";
+import LogoutButton from "@/components/shared/LogoutButton";
 
 const ConversationsList = dynamic(
   () => import("@/components/conversations-list"),
@@ -1102,11 +1103,27 @@ export default function DoctorDashboardClient({
             ))}
           </nav>
 
-          {/* Bottom */}
-          <div style={{ padding: "10px 8px", borderTop: `1px solid ${t.border}`, display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0 }}>
-            <NavItem icon={Settings} label="الإعدادات"     collapsed={collapsed} t={t} onClick={() => {}} />
-            <NavItem icon={LogOut}   label="تسجيل الخروج" collapsed={collapsed} t={t} onClick={() => {}} />
-          </div>
+        {/* Bottom */}
+<div
+  style={{
+    padding: "10px 8px",
+    borderTop: `1px solid ${t.border}`,
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px",
+    flexShrink: 0,
+  }}
+>
+  <NavItem
+    icon={Settings}
+    label="الإعدادات"
+    collapsed={collapsed}
+    t={t}
+    onClick={() => {}}
+  />
+
+  <LogoutButton className="w-full" />
+</div>
         </aside>
 
         {/* ════ MAIN AREA ════ */}

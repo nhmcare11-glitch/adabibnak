@@ -3,7 +3,7 @@ const { parse } = require("url");
 const next = require("next");
 const fs = require("fs");
 
-const app = next({ dev: true });
+const app = next({ dev: true, turbopack: false }); // ← أضف هذا
 const handle = app.getRequestHandler();
 
 const httpsOptions = {

@@ -1,74 +1,94 @@
-import { db } from "@/lib/prisma";
-import { createNotification } from "@/actions/notifications";
 import { NextResponse } from "next/server";
+import { db } from "@/lib/prisma";
+import { sendBulkSMS } from "@/lib/sms";
+import { msgAppointmentReminder } from "@/lib/sms-messages";
+import { addHours } from "date-fns";
 
-export async function GET(request: Request) {
-  // تأكد أن الطلب من cron job (secret key)
+// ============================================================
+// GET /api/cron/send-reminders
+//
+// يُشغَّل كل ساعة عبر Vercel Cron
+// يرسل SMS تذكير للمرضى الذين موعدهم بعد 23–25 ساعة
+//
+// في vercel.json:
+// { "crons": [{ "path": "/api/cron/send-reminders", "schedule": "0 * * * *" }] }
+// ============================================================
+export async function GET(request) {
+  // حماية الـ endpoint
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const now = new Date();
-  
-  // تذكير قبل 24 ساعة
-  const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const appointments24h = await db.appointment.findMany({
-    where: {
-      status: "SCHEDULED",
-      startTime: {
-        gte: new Date(in24Hours.setHours(0, 0, 0, 0)),
-        lt: new Date(in24Hours.setHours(23, 59, 59, 999)),
+  try {
+    const now = new Date();
+    const windowStart = addHours(now, 23);
+    const windowEnd   = addHours(now, 25);
+
+    // جلب المواعيد القريبة مع بيانات المريض والطبيب
+    const appointments = await db.appointment.findMany({
+      where: {
+        status: "SCHEDULED",
+        startTime: {
+          gte: windowStart,
+          lte: windowEnd,
+        },
       },
-    },
-    include: { patient: true, doctor: true },
-  });
-
-  // تذكير قبل 10 دقائق
-  const in10Min = new Date(now.getTime() + 10 * 60 * 1000);
-  const appointments10min = await db.appointment.findMany({
-    where: {
-      status: "SCHEDULED",
-      startTime: {
-        gte: new Date(in10Min.setMinutes(in10Min.getMinutes() - 5)),
-        lt: new Date(in10Min.setMinutes(in10Min.getMinutes() + 5)),
+      include: {
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            patientProfile: {
+              select: { phone: true },
+            },
+          },
+        },
+        doctor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
-    },
-    include: { patient: true, doctor: true },
-  });
-
-  // إرسال التذكيرات
-  for (const apt of appointments24h) {
-    await createNotification({
-      userId: apt.patient.id,
-      type: "APPOINTMENT_REMINDER_24H",
-      title: "⏰ تذكير بموعدك غداً",
-      message: `لديك موعد مع الدكتور ${apt.doctor.name} غداً الساعة ${new Date(apt.startTime).toLocaleTimeString('ar-DZ')}`,
-      link: `/appointments/${apt.id}`,
     });
+
+    if (appointments.length === 0) {
+      return NextResponse.json({ sent: 0, message: "لا توجد مواعيد قريبة" });
+    }
+
+    // بناء قائمة الرسائل
+    const messages = [];
+
+    for (const appt of appointments) {
+      const phone = appt.patient.patientProfile?.phone;
+      if (!phone) continue;
+
+      messages.push({
+        to: phone,
+        text: msgAppointmentReminder({
+          patientName: appt.patient.name || "المريض",
+          doctorName:  appt.doctor.name  || "الطبيب",
+          startTime:   appt.startTime,
+        }),
+      });
+    }
+
+    await sendBulkSMS(messages);
+
+    console.log(`[CRON] ✅ أُرسلت ${messages.length} رسالة من أصل ${appointments.length} موعد`);
+
+    return NextResponse.json({
+      success: true,
+      total:   appointments.length,
+      sent:    messages.length,
+      skipped: appointments.length - messages.length,
+    });
+
+  } catch (error) {
+    console.error("[CRON] ❌ خطأ:", error?.message);
+    return NextResponse.json({ error: error?.message || "خطأ غير معروف" }, { status: 500 });
   }
-
-  for (const apt of appointments10min) {
-    await createNotification({
-      userId: apt.patient.id,
-      type: "APPOINTMENT_REMINDER_10MIN",
-      title: "⚠️ تذكير بموعدك بعد 10 دقائق",
-      message: `موعدك مع الدكتور ${apt.doctor.name} بعد 10 دقائق`,
-      link: `/appointments/${apt.id}`,
-    });
-    
-    await createNotification({
-      userId: apt.doctor.id,
-      type: "APPOINTMENT_REMINDER_10MIN",
-      title: "⚠️ تذكير بموعدك بعد 10 دقائق",
-      message: `لديك موعد مع المريض ${apt.patient.name} بعد 10 دقائق`,
-      link: `/doctor/appointments/${apt.id}`,
-    });
-  }
-
-  return NextResponse.json({ 
-    success: true, 
-    sent24h: appointments24h.length, 
-    sent10min: appointments10min.length 
-  });
 }
