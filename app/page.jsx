@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import HeroSection from "@/components/HeroSection";
 import EmergencyButton from "@/components/ui/emergency-button";
+import ClinicMapSection from "@/components/clinic-map-section";
+import FooterEnhanced from "@/components/footer-enhanced";
 import {
   Stethoscope, Baby, Brain, FlaskConical,
   ArrowLeft, Star, HeartPulse, ClipboardList,
@@ -107,12 +107,12 @@ export default function Home() {
         </div>
 
         {/* ══════════════════════════════════
-            1. HERO — full-width bg image
+            1. HERO
         ══════════════════════════════════ */}
         <HeroSection startHref={startHref} />
 
         {/* ══════════════════════════════════
-            2. WHY SECTION — "لماذا تختار أديبيناك؟"
+            2. WHY SECTION
         ══════════════════════════════════ */}
         <section className="py-20" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
@@ -316,6 +316,16 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* ══════════════════════════════════
+            6. CLINIC MAP — NEW
+        ══════════════════════════════════ */}
+        <ClinicMapSection />
+
+        {/* ══════════════════════════════════
+            7. FOOTER — NEW
+        ══════════════════════════════════ */}
+        <FooterEnhanced />
 
       </div>
     </>
