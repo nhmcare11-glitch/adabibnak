@@ -26,13 +26,12 @@ export default function StartChatButton({ doctorId }) {
     <Button
       onClick={handleStartChat}
       disabled={isPending}
-      variant="outline"
-      className="border-blue-900/30 hover:bg-blue-900/20 text-white"
+      className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white border-0 shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30 transition-all"
     >
       {isPending ? (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
       ) : (
-        <MessageCircle className="h-4 w-4 mr-2" />
+        <MessageCircle className="h-4 w-4 ml-2" />
       )}
       بدء الدردشة
     </Button>

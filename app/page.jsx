@@ -13,7 +13,6 @@ import {
   X, Phone, Send, MessageCircle,
   CheckCircle, AlertCircle
 } from "lucide-react";
-import FooterWrapper from "@/components/ui/footer-wrapper";
 
 // ─── Contact Modal ───
 function ContactModal({ isOpen, onClose }) {
@@ -577,7 +576,6 @@ export default function Home() {
         </section>
 
        
-
 
       </div>
     </>

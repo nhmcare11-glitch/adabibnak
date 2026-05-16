@@ -76,7 +76,7 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
 
           {/* الوصف - بلون #2DBFB8 */}
           <p 
-            className="mb-8 max-w-lg leading-relaxed text-[#2DBFB8] drop-shadow"
+            className="mb-8 max-w-lg leading-relaxed text-[#e4eaea] drop-shadow"
             style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.15rem)", fontWeight: 400 }}
           >
             نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال

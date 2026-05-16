@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import StartChatButton from "@/components/start-chat-button";
+import StartChatButton from "@/components/StartChatButton";
 
 export function DoctorCard({ doctor }) {
   return (

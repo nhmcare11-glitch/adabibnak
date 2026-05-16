@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ShieldCheck, Activity, Sparkles } from "lucide-react";
 
 export const metadata = {
-  title: "لوحة الأدمين - عدبيبنك",
+  title: "Adabibnak-admin dashboard",
   description: "إدارة الأطباء والمرضى وإعدادات المنصة - لوحة تحكم احترافية",
 };
 
@@ -182,7 +182,7 @@ export default async function AdminLayout({ children }) {
             <div className="logo-icon-wrapper">
               <ShieldCheck size={20} color="#ffffff" />
             </div>
-            <span>عدبيبنك</span>
+           <span>Adabibnak </span>
           </div>
           <div className="admin-topbar-stats">
             <div className="topbar-stat">
@@ -192,7 +192,7 @@ export default async function AdminLayout({ children }) {
             </div>
             <div className="admin-topbar-badge">
               <Sparkles size={12} />
-              لوحة الأدمين
+              admin dashboard
             </div>
           </div>
         </div>

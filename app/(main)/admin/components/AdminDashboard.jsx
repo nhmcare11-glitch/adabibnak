@@ -1161,7 +1161,7 @@ export default function AdminDashboard({ stats, pendingDoctors, verifiedDoctors 
           <div className="top-nav">
             <div className="logo-area">
               <div className="logo-icon"><Shield size={20} /></div>
-              <span className="logo-text">Adabibnek | لوحة الأدمين</span>
+               <span className="logo-text">Adabibnek |admin dashboard </span>
             </div>
           </div>
           <div className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', flexDirection: 'column', gap: 16 }}>
@@ -1271,12 +1271,7 @@ export default function AdminDashboard({ stats, pendingDoctors, verifiedDoctors 
                 </div>
               </div>
 
-              <div className="metrics-row">
-                <PercentageCard label="نسبة إنجاز المواعيد" value={analyticsData.completionRate} delay={0} />
-                <PercentageCard label="رضا المرضى" value={analyticsData.satisfactionRate} delay={100} />
-                <PercentageCard label="نمو الأطباء" value={Math.abs(analyticsData.doctorsGrowth)} delay={200} />
-                <PercentageCard label="نمو المواعيد" value={Math.abs(analyticsData.appointmentsGrowth)} delay={300} />
-              </div>
+
             </>
           )}
 

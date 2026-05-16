@@ -1,12 +1,10 @@
-// app/chat/[id]/page.jsx
 import { getMessages, getMyConversations } from "@/actions/chat";
 import { getCurrentUser } from "@/actions/user";
 import { redirect } from "next/navigation";
-import ChatWindow from "./_components/chat-window";
+import ChatWindow from "@/components/chat/ChatWindow";  // ← غيّر المسار
 
 export default async function ChatPage({ params }) {
   const { id } = await params;
-
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
 
@@ -19,15 +17,7 @@ export default async function ChatPage({ params }) {
       : conversation.patient;
 
   return (
-    <div style={{ 
-      height: "100%", 
-      display: "flex",
-      background: "#f0f4f8",
-      borderRadius: "16px",
-      overflow: "hidden",
-      margin: "0",
-      padding: "0",
-    }}>
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <ChatWindow
         conversationId={id}
         initialMessages={messages}

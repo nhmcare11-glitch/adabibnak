@@ -4,10 +4,12 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "./notifications";
-import { put, del } from "@vercel/blob";
 import { v4 as uuidv4 } from "uuid";
+import { mkdir, writeFile, unlink } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 
-// ==================== رفع الملفات ====================
+// ==================== رفع الملفات (محلي) ====================
 export async function uploadFile(formData) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -21,6 +23,14 @@ export async function uploadFile(formData) {
   const files = formData.getAll("files");
   const uploadedFiles = [];
 
+  // مجلد التخزين المحلي
+  const uploadDir = join(process.cwd(), "public", "uploads", "chat", currentUser.id);
+
+  // أنشئ المجلد إذا لم يكن موجوداً
+  if (!existsSync(uploadDir)) {
+    await mkdir(uploadDir, { recursive: true });
+  }
+
   for (const file of files) {
     if (!(file instanceof File)) continue;
 
@@ -30,19 +40,22 @@ export async function uploadFile(formData) {
 
     const extension = file.name.split(".").pop();
     const filename = `${uuidv4()}.${extension}`;
-    const path = `chat-files/${currentUser.id}/${filename}`;
+    const filePath = join(uploadDir, filename);
 
-    const blob = await put(path, file, {
-      access: "public",
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    // احفظ الملف محلياً
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await writeFile(filePath, buffer);
+
+    // URL للوصول للملف
+    const fileUrl = `/uploads/chat/${currentUser.id}/${filename}`;
 
     uploadedFiles.push({
       name: file.name,
       type: file.type,
       size: file.size,
-      url: blob.url,
-      path: path,
+      url: fileUrl,
+      path: filePath,
     });
   }
 
@@ -158,7 +171,7 @@ export async function sendMessage(conversationId, content, files = []) {
 
   revalidatePath(`/chat/${conversationId}`);
   revalidatePath("/chat");
-  
+
   return { message };
 }
 
@@ -277,7 +290,7 @@ export async function markMessagesAsRead(conversationId) {
   return { success: true };
 }
 
-// ==================== حذف رسالة ====================
+// ==================== حذف رسالة (محلي) ====================
 export async function deleteMessage(messageId) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
@@ -296,13 +309,14 @@ export async function deleteMessage(messageId) {
   if (!message) throw new Error("Message not found");
   if (message.senderId !== currentUser.id) throw new Error("Not authorized to delete this message");
 
+  // حذف الملفات المحلية
   if (message.files && message.files.length > 0) {
     for (const file of message.files) {
-      if (file.path) {
+      if (file.path && existsSync(file.path)) {
         try {
-          await del(file.path, { token: process.env.BLOB_READ_WRITE_TOKEN });
+          await unlink(file.path);
         } catch (err) {
-          console.error("Failed to delete file:", err);
+          console.error("Failed to delete local file:", err);
         }
       }
     }
