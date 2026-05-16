@@ -59,9 +59,15 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
             className="mb-5 font-black leading-[1.1] text-white drop-shadow-lg"
             style={{ fontSize: "clamp(2rem, 4.5vw, 3.6rem)" }}
           >
+             <span className="text-[#2DBFB8]">حق في عمق الصحراء</span>
+             <br />
             طبيبك بين يديك
             <br />
-            <span className="text-[#2DBFB8]">حق في عمق الصحراء</span>
+               <h3 className="text-[#2DBFB8] text-[20px] ">ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ</h3>
+             
+             
+           
+           
           </h1>
 
           {/* الوصف */}
@@ -75,15 +81,10 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
             <Link href={startHref}>
               <button className="flex items-center gap-2 rounded-full bg-[#2DBFB8] px-7 py-3.5 text-sm font-bold text-white shadow-[0_8px_25px_rgba(45,191,184,0.5)] transition-all hover:-translate-y-0.5 hover:bg-teal-500">
                 <Calendar className="h-4 w-4" />
-                احجز موعد الآن
+                اكمل تسجيلك
               </button>
             </Link>
-            <Link href="/doctors">
-              <button className="flex items-center gap-2 rounded-full border-2 border-white/60 bg-white/10 px-7 py-3.5 text-sm font-bold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20">
-                <Video className="h-4 w-4" />
-                استشارة فورية
-              </button>
-            </Link>
+
             {/* ── زر الطوارئ ── */}
             <EmergencyButton />
           </div>

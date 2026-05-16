@@ -37,6 +37,9 @@ model User {
   patientPrescriptions Prescription[]          @relation("PatientPrescriptions")
   salariesApprovedBy   SecretarySalary[]       @relation("SalaryApprovedBy")
   salariesAsSecretary  SecretarySalary[]       @relation("SecretarySalaries")
+  medicalRecord        MedicalRecord?
+  doctorNotes          ConsultationNote[]      @relation("DoctorNotes")
+  patientNotes         ConsultationNote[]      @relation("PatientNotes")
 
   @@map("User")
 }
@@ -92,6 +95,7 @@ model Appointment {
   patient            User              @relation("PatientAppointments", fields: [patientId], references: [id])
   payment            Payment?
   prescription       Prescription?
+  consultationNote   ConsultationNote?
 
   @@index([status, startTime])
   @@index([doctorId, startTime])
@@ -195,6 +199,54 @@ model PatientProfile {
   longitude         Float?
   phone             String?
   user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MedicalRecord {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  firstName          String?
+  lastName           String?
+  gender             String?
+  dateOfBirth        DateTime?
+  age                Int?
+  phone              String?
+  email              String?
+  bloodType          String?
+  weight             Float?
+  height             Float?
+  chronicDiseases    String?
+  allergies          String?
+  previousSurgeries  String?
+  currentMedications String?
+  smokingStatus      String?
+  pregnancyStatus    String?
+  familyDiseases     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("MedicalRecord")
+}
+
+model ConsultationNote {
+  id                String      @id @default(uuid())
+  appointmentId     String      @unique
+  doctorId          String
+  patientId         String
+  symptoms          String?
+  diagnosis         String?
+  recommendations   String?
+  prescriptionNotes String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor            User        @relation("DoctorNotes", fields: [doctorId], references: [id])
+  patient           User        @relation("PatientNotes", fields: [patientId], references: [id])
+
+  @@index([appointmentId])
+  @@index([doctorId])
+  @@index([patientId])
+  @@map("ConsultationNote")
 }
 
 model Payment {

@@ -242,12 +242,12 @@ export default function Home() {
                     جاهز لرحلة صحية أكثر ذكاءً؟
                   </h2>
                   <p className="mb-7 text-sm leading-relaxed text-white/70 md:text-base">
-                    انضم لآلاف المرضى الذين يثقون بأديبيناك لتوفير الرعاية الطبية المتطورة في أي وقت وأي مكان.
+                    انضم لآلاف المرضى الذين يثقون بAdabibanek اية الطبية المتطورة في أي وقت وأي مكان.
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <Link href={startHref}>
                       <button className="rounded-full bg-[#2DBFB8] px-7 py-3 text-sm font-bold text-white shadow-[0_8px_25px_rgba(45,191,184,0.4)] transition hover:-translate-y-0.5 hover:bg-teal-500">
-                        ابدأ مع سفاتشار
+                       ابدا مع Adabibnak
                       </button>
                     </Link>
                     <Link href="/doctors">

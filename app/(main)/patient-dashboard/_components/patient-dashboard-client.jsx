@@ -7,8 +7,9 @@ import { ar } from "date-fns/locale";
 import {
   Calendar, Clock, Stethoscope, FileText, Pill, ChevronRight,
   CheckCircle, CalendarClock, Activity, Plus, Bell,
-  LayoutDashboard, MessageSquare, Settings,  Menu, X,
+  LayoutDashboard, MessageSquare, Settings, Menu, X,
   User, Camera, Edit3, Phone, Mail, MapPin, Save,
+  Heart, FileHeart
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,7 +18,6 @@ import PaymentProfileForm from "./PaymentProfileForm";
 import PatientPaymentCard from "./PatientPaymentCard";
 import { updatePatientProfile } from "@/actions/patient-dashboard";
 import InteractiveBodySection from "./InteractiveBodySection";
-
 import LogoutButton from "@/components/shared/LogoutButton";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -54,6 +54,7 @@ function Sidebar({ user, activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
     { key:"past",          label:"المواعيد السابقة", icon:<CheckCircle     className="h-[35px] w-[35px]"/> },
     { key:"prescriptions", label:"الوصفات الطبية",  icon:<FileText        className="h-[35px] w-[35px]"/> },
     { key:"doctors",       label:"أطبائي",           icon:<Stethoscope    className="h-[35px] w-[35px]"/> },
+    { key:"medical-record",label:"ملفي الطبي",      icon:<Heart           className="h-[18px] w-[18px]"/> },
     { key:"profile",       label:"ملفي الشخصي",     icon:<User           className="h-[35px] w-[35px]"/> },
   ];
 
@@ -101,9 +102,9 @@ function Sidebar({ user, activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold uppercase tracking-widest px-3 py-2" style={{color:"rgba(94,234,212,0.4)"}}>القائمة الرئيسية</p>
-        {nav.slice(0,5).map(item => <NavBtn key={item.key} item={item}/>)}
+        {nav.slice(0,6).map(item => <NavBtn key={item.key} item={item}/>)}
         <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-4 pb-2" style={{color:"rgba(94,234,212,0.4)"}}>الحساب</p>
-        <NavBtn item={nav[5]}/>
+        <NavBtn item={nav[6]}/>
         <a href="/chat"
           className="w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13.5px] font-medium transition-all"
           style={{color:"rgba(255,255,255,0.55)"}}
@@ -114,9 +115,9 @@ function Sidebar({ user, activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       </nav>
 
       {/* Logout */}
-        <LogoutButton
-  className="w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13.5px] font-medium transition-all mt-3"
- />
+      <LogoutButton
+        className="w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13.5px] font-medium transition-all mt-3"
+      />
     </div>
   );
 
@@ -215,8 +216,8 @@ function TopHeader({ user, setMobileOpen, setActiveTab }) {
                 </button>
                 <div style={{borderTop:"1px solid #ccfbf1",margin:"6px 0"}}/>
                 <LogoutButton
-  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors text-right"
-/>
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors text-right"
+                />
               </div>
             </div>
           )}
@@ -527,7 +528,7 @@ function LocationField({ city, setCity, setLat, setLng }) {
 }
 
 // ── Profile Field (outside ProfileTab to prevent remount on keystroke) ────────
-function ProfileField({ label, icon, value, onChange, type="text", placeholder }) {
+function ProfileField({ label, icon: Icon, value, onChange, type="text", placeholder }) {
   return (
     <div>
       <label className="block text-xs font-semibold mb-1.5" style={{color:C.textMid}}>{label}</label>
@@ -537,7 +538,7 @@ function ProfileField({ label, icon, value, onChange, type="text", placeholder }
         onFocusCapture={e=>{e.currentTarget.style.borderColor=C.primary;e.currentTarget.style.boxShadow="0 0 0 3px rgba(13,148,136,0.1)";}}
         onBlurCapture={e=>{e.currentTarget.style.borderColor="#ccfbf1";e.currentTarget.style.boxShadow="none";}}
       >
-        <div style={{color:C.textLight}}>{icon}</div>
+        <div style={{color:C.textLight}}>{Icon}</div>
         <input
           type={type}
           value={value}
@@ -739,7 +740,7 @@ function OverviewTab({ data, onViewPrescription }) {
         <StatCard icon={<CheckCircle className="h-5 w-5"/>}     label="مكتملة"           value={stats.completed}     iconBg="linear-gradient(135deg,#10b981,#059669)"/>
         <StatCard icon={<FileText className="h-5 w-5"/>}        label="وصفات طبية"       value={stats.prescriptions} iconBg="linear-gradient(135deg,#8b5cf6,#7c3aed)"/>
       </div>
-<InteractiveBodySection />
+      <InteractiveBodySection />
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -776,6 +777,42 @@ function OverviewTab({ data, onViewPrescription }) {
   );
 }
 
+// ── Medical Record Tab ────────────────────────────────────────────────────────
+function MedicalRecordTab() {
+  return (
+    <div className="space-y-4">
+      <h2 className="font-bold text-xl flex items-center gap-2" style={{color: C.text}}>
+        <span className="w-1 h-6 rounded-full inline-block" style={{background: "#ef4444"}}/>
+        ملفي الطبي
+      </h2>
+      <div className="rounded-2xl p-6 bg-white shadow-sm" style={{border: "1px solid #ccfbf1"}}>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white" style={{background: "linear-gradient(135deg,#ef4444,#dc2626)"}}>
+            <FileHeart className="h-7 w-7" />
+          </div>
+          <div>
+            <h3 className="font-bold text-base" style={{color: C.text}}>الملف الطبي الشامل</h3>
+            <p className="text-sm mt-0.5" style={{color: C.textLight}}>أدخل معلوماتك الطبية الكاملة</p>
+          </div>
+        </div>
+        <p className="text-sm leading-relaxed mb-4" style={{color: C.textMid}}>
+          يحتوي ملفك الطبي على جميع المعلومات الصحية الأساسية التي يحتاجها طبيبك لفهم حالتك بشكل أفضل.
+          يمكنك تحديث هذه المعلومات في أي وقت.
+        </p>
+        <a 
+          href="/patient-dashboard/medical-record"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90"
+          style={{background: "linear-gradient(135deg,#ef4444,#dc2626)"}}
+        >
+          <Heart className="h-4 w-4" />
+          فتح ملفي الطبي
+          <ChevronRight className="h-4 w-4" />
+        </a>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function PatientDashboardClient({ data }) {
   const { user, stats, upcoming, past, prescriptions, doctors } = data;
@@ -783,8 +820,8 @@ export function PatientDashboardClient({ data }) {
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const titles = {overview:"لوحة التحكم",upcoming:"المواعيد القادمة",past:"المواعيد السابقة",prescriptions:"الوصفات الطبية",doctors:"أطبائي",profile:"ملفي الشخصي"};
-  const dots   = {overview:C.primary,upcoming:"#f59e0b",past:"#10b981",prescriptions:"#8b5cf6",doctors:"#0891b2",profile:C.primary};
+  const titles = {overview:"لوحة التحكم",upcoming:"المواعيد القادمة",past:"المواعيد السابقة",prescriptions:"الوصفات الطبية",doctors:"أطبائي",profile:"ملفي الشخصي","medical-record":"ملفي الطبي"};
+  const dots   = {overview:C.primary,upcoming:"#f59e0b",past:"#10b981",prescriptions:"#8b5cf6",doctors:"#0891b2",profile:C.primary,"medical-record":"#ef4444"};
 
   return (
     <div className="flex min-h-screen" dir="rtl" style={{background:C.primaryLight}}>
@@ -795,6 +832,7 @@ export function PatientDashboardClient({ data }) {
 
           {activeTab==="overview" && <OverviewTab data={{...data,user}} onViewPrescription={setSelectedPrescription}/>}
           {activeTab==="profile"  && <ProfileTab user={user}/>}
+          {activeTab==="medical-record" && <MedicalRecordTab/>}
 
           {["upcoming","past","prescriptions","doctors"].includes(activeTab) && (
             <div className="space-y-4">

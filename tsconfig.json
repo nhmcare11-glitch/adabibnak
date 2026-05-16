@@ -31,4 +31,6 @@
     "**/*.mts"
 , "components/appointment-card.jsx", "middleware.ts", "app/page.jsx"  ],
   "exclude": ["node_modules"]
+ 
 }
+
