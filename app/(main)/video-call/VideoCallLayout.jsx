@@ -14,11 +14,6 @@ import {
   Video,
   Loader2,
 } from "lucide-react";
-import {
-  doctorJoinedVideoCall,
-  patientJoinedVideoCall,
-  endVideoCall,
-} from "@/actions/video-call";
 
 export default function VideoCallLayout({
   sessionId,
@@ -38,11 +33,12 @@ export default function VideoCallLayout({
     appointment?.doctor?.clerkUserId === currentUserId ||
     appointment?.doctorId === currentUserId;
 
-  const isPatient = !isDoctor;
-
-  // ─────────────────────────────
-  // JITSI
-  // ─────────────────────────────
+  console.log("Role check:", {
+    isDoctor,
+    currentUserId,
+    doctorClerkId: appointment?.doctor?.clerkUserId,
+    doctorDbId: appointment?.doctorId,
+  });
 
   useEffect(() => {
     if (phase !== "calling") return;
@@ -55,18 +51,14 @@ export default function VideoCallLayout({
 
       api = new window.JitsiMeetExternalAPI(domain, {
         roomName: sessionId,
-
         parentNode: document.getElementById("jitsi-container"),
-
         width: "100%",
         height: "100%",
-
         userInfo: {
           displayName: isDoctor
             ? appointment?.doctor?.name || "Doctor"
             : appointment?.patient?.name || "Patient",
         },
-
         configOverwrite: {
           prejoinPageEnabled: false,
           startWithAudioMuted: false,
@@ -74,7 +66,6 @@ export default function VideoCallLayout({
           enableWelcomePage: false,
           disableModeratorIndicator: true,
         },
-
         interfaceConfigOverwrite: {
           SHOW_JITSI_WATERMARK: false,
           SHOW_WATERMARK_FOR_GUESTS: false,
@@ -90,15 +81,11 @@ export default function VideoCallLayout({
       }
 
       const script = document.createElement("script");
-
       script.src = "https://meet.jit.si/external_api.js";
-
       script.async = true;
-
       script.onload = () => {
         startMeeting();
       };
-
       document.body.appendChild(script);
     };
 
@@ -107,11 +94,7 @@ export default function VideoCallLayout({
     return () => {
       if (api) api.dispose();
     };
-  }, [phase, sessionId]);
-
-  // ─────────────────────────────
-  // FULLSCREEN
-  // ─────────────────────────────
+  }, [phase, sessionId, isDoctor, appointment]);
 
   const toggleFullscreen = async () => {
     try {
@@ -129,48 +112,60 @@ export default function VideoCallLayout({
     const onFsChange = () => {
       setFullscreen(!!document.fullscreenElement);
     };
-
     document.addEventListener("fullscreenchange", onFsChange);
-
     return () => {
       document.removeEventListener("fullscreenchange", onFsChange);
     };
   }, []);
-
-  // ─────────────────────────────
-  // HANDLE JOIN (with notification)
-  // ─────────────────────────────
 
   const handleJoinCall = async () => {
     setIsJoining(true);
 
     try {
       if (isDoctor && appointment?.id) {
-        // ✅ Doctor joined → notify patient
-        await doctorJoinedVideoCall(appointment.id);
-      } else if (isPatient && appointment?.id) {
-        // ✅ Patient joined → update status
-        await patientJoinedVideoCall(appointment.id);
+        console.log("Doctor joining call...", appointment.id);
+
+        const response = await fetch("/api/video-call/doctor-joined", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appointmentId: appointment.id }),
+        });
+
+        const result = await response.json();
+        console.log("API response:", result);
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to start call");
+        }
+
+        console.log("Doctor joined successfully");
+      } else if (!isDoctor && appointment?.id) {
+        console.log("Patient joining call...", appointment.id);
+
+        await fetch("/api/video-call/patient-joined", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appointmentId: appointment.id }),
+        });
       }
 
       setPhase("calling");
     } catch (error) {
       console.error("Join error:", error);
-      // Still enter the call even if notification fails
-      setPhase("calling");
+      alert("Failed to start call: " + error.message);
     } finally {
       setIsJoining(false);
     }
   };
 
-  // ─────────────────────────────
-  // END CALL
-  // ─────────────────────────────
-
   const handleEnd = async () => {
     try {
       if (appointment?.id) {
-        await endVideoCall(appointment.id);
+        await fetch("/api/video-call/end", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ appointmentId: appointment.id }),
+        });
       }
     } catch (error) {
       console.error("End call error:", error);
@@ -178,10 +173,6 @@ export default function VideoCallLayout({
 
     router.push(isDoctor ? "/doctor-dashboard" : "/patient-dashboard");
   };
-
-  // ─────────────────────────────
-  // INVALID SESSION
-  // ─────────────────────────────
 
   if (!sessionId) {
     return (
@@ -201,11 +192,11 @@ export default function VideoCallLayout({
           </div>
 
           <h1 className="text-2xl font-bold text-white mb-2">
-            مكالمة غير صالحة
+            Invalid Call
           </h1>
 
           <p className="text-slate-400 text-sm mb-6">
-            بيانات المكالمة غير موجودة
+            Call data not found
           </p>
 
           <button
@@ -215,20 +206,15 @@ export default function VideoCallLayout({
               background: "linear-gradient(135deg,#2563eb,#0891b2)",
             }}
           >
-            العودة للداشبورد
+            Back to Dashboard
           </button>
         </div>
       </div>
     );
   }
 
-  // ─────────────────────────────
-  // UI
-  // ─────────────────────────────
-
   return (
     <AnimatePresence mode="wait">
-      {/* PRE CHECK */}
       {phase === "pre-check" && (
         <motion.div
           key="pre-check"
@@ -251,13 +237,13 @@ export default function VideoCallLayout({
             </div>
 
             <h1 className="text-5xl font-bold text-white mb-5">
-              {isDoctor ? "بدء الاستشارة" : "الانضمام للاستشارة"}
+              {isDoctor ? "Start Consultation" : "Join Consultation"}
             </h1>
 
             <p className="text-slate-400 mb-8 text-lg">
               {isDoctor
-                ? `مع ${appointment?.patient?.name || "المريض"}`
-                : `مع د. ${appointment?.doctor?.name || "الطبيب"}`}
+                ? `with ${appointment?.patient?.name || "Patient"}`
+                : `with Dr. ${appointment?.doctor?.name || "Doctor"}`}
             </p>
 
             <button
@@ -272,12 +258,12 @@ export default function VideoCallLayout({
               {isJoining ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري الدخول...
+                  Joining...
                 </>
               ) : (
                 <>
                   <Video className="w-5 h-5" />
-                  {isDoctor ? "بدء المكالمة" : "الدخول إلى الاستشارة"}
+                  {isDoctor ? "Start Call" : "Join Call"}
                 </>
               )}
             </button>
@@ -285,7 +271,6 @@ export default function VideoCallLayout({
         </motion.div>
       )}
 
-      {/* CALL */}
       {phase === "calling" && (
         <motion.div
           ref={containerRef}
@@ -294,18 +279,13 @@ export default function VideoCallLayout({
           className="flex h-screen overflow-hidden relative"
           style={{ background: "#030d1a" }}
         >
-          {/* VIDEO SIDE */}
           <motion.div
             animate={{ width: collapsed ? "100%" : "70%" }}
             transition={{ duration: 0.4 }}
             className="relative flex flex-col bg-black overflow-hidden"
           >
-            <div
-              id="jitsi-container"
-              className="w-full h-full"
-            />
+            <div id="jitsi-container" className="w-full h-full" />
 
-            {/* CONTROLS */}
             <div
               className="absolute bottom-0 inset-x-0 px-5 py-4 flex items-center justify-between"
               style={{
@@ -319,24 +299,18 @@ export default function VideoCallLayout({
               </div>
 
               <div className="flex items-center gap-2">
-                {/* PANEL */}
                 <button
                   onClick={() => setCollapsed(!collapsed)}
                   className="px-4 py-2 rounded-xl text-white text-sm"
-                  style={{
-                    background: "rgba(255,255,255,.1)",
-                  }}
+                  style={{ background: "rgba(255,255,255,.1)" }}
                 >
-                  {collapsed ? "إظهار الملف" : "إخفاء الملف"}
+                  {collapsed ? "Show File" : "Hide File"}
                 </button>
 
-                {/* FULLSCREEN */}
                 <button
                   onClick={toggleFullscreen}
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
-                  style={{
-                    background: "rgba(255,255,255,.1)",
-                  }}
+                  style={{ background: "rgba(255,255,255,.1)" }}
                 >
                   {fullscreen ? (
                     <Minimize2 className="w-4 h-4" />
@@ -345,22 +319,18 @@ export default function VideoCallLayout({
                   )}
                 </button>
 
-                {/* END */}
                 <button
                   onClick={handleEnd}
                   className="px-5 py-2 rounded-xl text-white font-semibold flex items-center gap-2"
-                  style={{
-                    background: "#dc2626",
-                  }}
+                  style={{ background: "#dc2626" }}
                 >
                   <PhoneOff className="w-4 h-4" />
-                  إنهاء المكالمة
+                  End Call
                 </button>
               </div>
             </div>
           </motion.div>
 
-          {/* MEDICAL PANEL */}
           <AnimatePresence>
             {!collapsed && (
               <motion.div
@@ -370,39 +340,28 @@ export default function VideoCallLayout({
                 transition={{ duration: 0.4 }}
                 className="overflow-hidden"
                 style={{
-                  background:
-                    "linear-gradient(180deg,#04101f 0%,#030d1a 100%)",
+                  background: "linear-gradient(180deg,#04101f 0%,#030d1a 100%)",
                   borderLeft: "1px solid rgba(96,165,250,.1)",
                 }}
               >
-                {/* HEADER */}
                 <div
                   className="flex items-center justify-between px-4 py-4"
-                  style={{
-                    borderBottom: "1px solid rgba(96,165,250,.1)",
-                  }}
+                  style={{ borderBottom: "1px solid rgba(96,165,250,.1)" }}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{
-                        background: "rgba(96,165,250,.1)",
-                      }}
+                      style={{ background: "rgba(96,165,250,.1)" }}
                     >
                       <FileText className="w-5 h-5 text-blue-400" />
                     </div>
-
                     <div>
-                      <h2 className="text-white font-bold">
-                        الملف الطبي
-                      </h2>
-
+                      <h2 className="text-white font-bold">Medical File</h2>
                       <p className="text-slate-400 text-sm">
                         {appointment?.patient?.name}
                       </p>
                     </div>
                   </div>
-
                   <button
                     onClick={() => setCollapsed(true)}
                     className="text-slate-400 hover:text-white"
@@ -411,9 +370,7 @@ export default function VideoCallLayout({
                   </button>
                 </div>
 
-                {/* BODY */}
                 <div className="p-5 space-y-5 overflow-y-auto h-full">
-                  {/* PATIENT */}
                   <div
                     className="rounded-2xl p-4"
                     style={{
@@ -421,44 +378,25 @@ export default function VideoCallLayout({
                       border: "1px solid rgba(96,165,250,.1)",
                     }}
                   >
-                    <h3 className="text-white font-semibold mb-4">
-                      معلومات المريض
-                    </h3>
-
+                    <h3 className="text-white font-semibold mb-4">Patient Info</h3>
                     <div className="space-y-3 text-sm">
                       <div>
-                        <span className="text-slate-500">الاسم:</span>
-
-                        <p className="text-white">
-                          {appointment?.patient?.name}
-                        </p>
+                        <span className="text-slate-500">Name:</span>
+                        <p className="text-white">{appointment?.patient?.name}</p>
                       </div>
-
                       <div>
-                        <span className="text-slate-500">
-                          البريد:
-                        </span>
-
-                        <p className="text-white">
-                          {appointment?.patient?.email}
-                        </p>
+                        <span className="text-slate-500">Email:</span>
+                        <p className="text-white">{appointment?.patient?.email}</p>
                       </div>
-
                       <div>
-                        <span className="text-slate-500">
-                          التاريخ:
-                        </span>
-
+                        <span className="text-slate-500">Date:</span>
                         <p className="text-white">
-                          {new Date(
-                            appointment?.startTime
-                          ).toLocaleDateString("ar-DZ")}
+                          {new Date(appointment?.startTime).toLocaleDateString("ar-DZ")}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* DESCRIPTION */}
                   <div
                     className="rounded-2xl p-4"
                     style={{
@@ -466,13 +404,9 @@ export default function VideoCallLayout({
                       border: "1px solid rgba(96,165,250,.1)",
                     }}
                   >
-                    <h3 className="text-white font-semibold mb-4">
-                      وصف الحالة
-                    </h3>
-
+                    <h3 className="text-white font-semibold mb-4">Case Description</h3>
                     <p className="text-slate-300 text-sm leading-relaxed">
-                      {appointment?.patientDescription ||
-                        "لا يوجد وصف للحالة"}
+                      {appointment?.patientDescription || "No description available"}
                     </p>
                   </div>
                 </div>
@@ -480,7 +414,6 @@ export default function VideoCallLayout({
             )}
           </AnimatePresence>
 
-          {/* FLOATING BUTTON */}
           {collapsed && (
             <button
               onClick={() => setCollapsed(false)}
@@ -491,7 +424,6 @@ export default function VideoCallLayout({
               }}
             >
               <FileText className="w-5 h-5 text-blue-400" />
-
               <ChevronLeft className="w-4 h-4 text-white" />
             </button>
           )}

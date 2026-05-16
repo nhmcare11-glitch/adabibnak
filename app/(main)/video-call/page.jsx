@@ -11,7 +11,7 @@ export default async function VideoCallPage({ searchParams }) {
 
   let appointment = null;
 
-  // الحالة 1: جاء appointmentId في الـ URL (الداشبورد الجديدة)
+  // الحالة 1: جاء appointmentId في الـ URL
   if (appointmentId) {
     appointment = await db.appointment.findFirst({
       where: { id: appointmentId },
@@ -22,6 +22,7 @@ export default async function VideoCallPage({ searchParams }) {
         doctor: {
           select: {
             id: true,
+            clerkUserId: true,  // ✅ أضفنا هذا
             name: true,
             specialty: true,
             imageUrl: true,
@@ -33,7 +34,6 @@ export default async function VideoCallPage({ searchParams }) {
       },
     });
 
-    // إذا لم يكن للموعد sessionId، أنشئ واحداً وخزّنه
     if (appointment && !appointment.videoSessionId) {
       const newSessionId = `session-${appointmentId}-${Date.now()}`;
       appointment = await db.appointment.update({
@@ -46,6 +46,7 @@ export default async function VideoCallPage({ searchParams }) {
           doctor: {
             select: {
               id: true,
+              clerkUserId: true,  // ✅ وأيضاً هنا
               name: true,
               specialty: true,
               imageUrl: true,
@@ -59,7 +60,7 @@ export default async function VideoCallPage({ searchParams }) {
     }
   }
 
-  // الحالة 2: جاء sessionId مباشرة في الـ URL (الطريقة القديمة)
+  // الحالة 2: جاء sessionId مباشرة
   else if (directSessionId) {
     appointment = await db.appointment.findFirst({
       where: { videoSessionId: directSessionId },
@@ -70,6 +71,7 @@ export default async function VideoCallPage({ searchParams }) {
         doctor: {
           select: {
             id: true,
+            clerkUserId: true,  // ✅ وأيضاً هنا
             name: true,
             specialty: true,
             imageUrl: true,
