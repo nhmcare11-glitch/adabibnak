@@ -13,6 +13,7 @@ import {
   X, Phone, Send, MessageCircle,
   CheckCircle, AlertCircle
 } from "lucide-react";
+import FooterWrapper from "@/components/ui/footer-wrapper";
 
 // ─── Contact Modal ───
 function ContactModal({ isOpen, onClose }) {
@@ -442,7 +443,7 @@ export default function Home() {
             <ScrollReveal>
               <div className="mb-10 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h2 className="mb-2 text-2xl font-black text-[#2DBFB8] dark:text-[#2DBFB8] md:text-3xl">
+                  <h2 className="mb-1 text-2xl font-black text-[#062220] dark:text-white md:text-3xl">
                     خدمات طبية شاملة
                   </h2>
                   <p className="text-sm text-[#6b7a7a] dark:text-slate-400">
@@ -575,110 +576,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════
-            6. FOOTER — Professional Single Footer
-        ══════════════════════════════════ */}
-        <footer className="bg-[#0f766e] py-16" dir="rtl">
-          <div className="container mx-auto px-4 md:px-10">
-            {/* Top Section */}
-            <div className="grid grid-cols-1 gap-10 md:grid-cols-4 mb-12">
-              {/* Brand */}
-              <div className="md:col-span-1">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                    <HeartPulse className="h-5 w-5 text-[#2DBFB8]" />
-                  </div>
-                  <span className="text-xl font-black text-white">أديبيبنك</span>
-                </div>
-                <p className="text-sm text-white/70 leading-relaxed">
-                  رعاية صحية عن بعد. تميز طبي صحراوي.
-                </p>
-                <div className="mt-4 flex items-center gap-2 text-white/60 text-sm">
-                  <span>📍</span>
-                  <span>الجزائر - الصحراء الكبرى</span>
-                </div>
-              </div>
+       
 
-              {/* Quick Links */}
-              <div>
-                <h4 className="text-[#2DBFB8] font-bold mb-4 text-lg">روابط سريعة</h4>
-                <ul className="space-y-2">
-                  <li>
-                    <Link href="/doctors" className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-1">
-                      <span>→</span> العيادات الإقليمية
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/contact" className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-1">
-                      <span>→</span> اتصال الطوارئ
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/medical-board" className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-1">
-                      <span>→</span> المجلس الطبي
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Legal */}
-              <div>
-                <h4 className="text-[#2DBFB8] font-bold mb-4 text-lg">قانوني</h4>
-                <ul className="space-y-2">
-                  <li>
-                    <Link href="/privacy" className="text-white/80 hover:text-[#2DBFB8] transition text-sm">
-                      سياسة الخصوصية
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/terms" className="text-white/80 hover:text-[#2DBFB8] transition text-sm">
-                      شروط الخدمة
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Languages */}
-              <div>
-                <h4 className="text-[#2DBFB8] font-bold mb-4 text-lg">اللغات</h4>
-                <div className="flex gap-2">
-                  <button className="px-3 py-1.5 rounded-lg bg-[#2DBFB8]/20 text-[#2DBFB8] text-sm font-bold hover:bg-[#2DBFB8]/30 transition">
-                    عربي
-                  </button>
-                  <button className="px-3 py-1.5 rounded-lg bg-white/10 text-white/70 text-sm hover:bg-white/20 transition">
-                    FR
-                  </button>
-                  <button className="px-3 py-1.5 rounded-lg bg-white/10 text-white/70 text-sm hover:bg-white/20 transition">
-                    EN
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-white/20 pt-8">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="text-white/60 text-sm">
-                  رعاية صحية عن بعد — <span className="text-[#2DBFB8] font-bold">Adabibnek</span>
-                </div>
-
-                <div className="text-white/60 text-sm">
-                  created by <span className="text-[#2DBFB8] font-bold">MHNcare</span>
-                </div>
-
-                <div className="text-white/60 text-sm">
-                  © 2026 أديبيبنك. جميع الحقوق محفوظة.
-                </div>
-              </div>
-
-              <div className="mt-4 text-center">
-                <p className="text-white/40 text-xs">
-                  مصمم لسكان المناطق النائية
-                </p>
-              </div>
-            </div>
-          </div>
-        </footer>
 
       </div>
     </>
