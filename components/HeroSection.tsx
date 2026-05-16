@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar, Video } from "lucide-react";
+import { Calendar } from "lucide-react";
 import EmergencyButton from "@/components/ui/emergency-button";
 
 export default function HeroSection({ startHref = "/onboarding" }: { startHref?: string }) {
@@ -31,47 +31,54 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
         }}
       />
 
-      {/* ── Overlay ── */}
+      {/* ── Overlay من اليمين فقط (حيث الكتابة) ── */}
       <div
-        className="absolute inset-0"
+        className="absolute top-0 bottom-0 right-0"
         style={{
           zIndex: 1,
+          width: "70%",
           background:
-            "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.05) 100%)",
+            "linear-gradient(to left, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%)",
         }}
       />
 
       {/* ── المحتوى ── */}
       <div
-        className="absolute inset-0 flex flex-col justify-end px-6 pb-24 md:px-16 lg:px-24"
+        className="absolute inset-0 flex flex-col justify-end px-6 pb-20 md:px-16 lg:px-24"
         style={{ zIndex: 2 }}
       >
         <div
-          className="max-w-xl"
+          className="max-w-2xl"
           style={{
             opacity: mounted ? 1 : 0,
             transform: mounted ? "translateY(0)" : "translateY(24px)",
             transition: "all 0.7s cubic-bezier(0.22,1,0.36,1)",
           }}
         >
-          {/* العنوان */}
+          {/* العنوان الرئيسي */}
           <h1
-            className="mb-5 font-black leading-[1.1] text-white drop-shadow-lg"
-            style={{ fontSize: "clamp(2rem, 4.5vw, 3.6rem)" }}
+            className="mb-3 font-black leading-[1.15] text-white drop-shadow-lg"
+            style={{ fontSize: "clamp(2.2rem, 5vw, 4rem)" }}
           >
-             <span className="text-[#2DBFB8]">حق في عمق الصحراء</span>
-             <br />
+            <span className="text-[#2DBFB8] block mb-1" style={{ fontSize: "clamp(1rem, 2.2vw, 1.6rem)", fontWeight: 600 }}>
+              حق في عمق الصحراء
+            </span>
             طبيبك بين يديك
-            <br />
-               <h3 className="text-[#2DBFB8] text-[20px] ">ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ</h3>
-             
-             
-           
-           
           </h1>
 
-          {/* الوصف */}
-          <p className="mb-8 max-w-md text-sm leading-relaxed text-white/85 drop-shadow md:text-base">
+          {/* النص الأمازيغي - بالأبيض */}
+          <p 
+            className="mb-6 text-white font-semibold drop-shadow-md"
+            style={{ fontSize: "clamp(1rem, 1.8vw, 1.3rem)", letterSpacing: "0.02em" }}
+          >
+            ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ
+          </p>
+
+          {/* الوصف - بلون #2DBFB8 */}
+          <p 
+            className="mb-8 max-w-lg leading-relaxed text-[#2DBFB8] drop-shadow"
+            style={{ fontSize: "clamp(0.95rem, 1.5vw, 1.15rem)", fontWeight: 400 }}
+          >
             نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال
             حجوزات آمنة وسريعة واستشارات متطورة.
           </p>
