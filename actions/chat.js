@@ -11,55 +11,64 @@ import { existsSync } from "fs";
 
 // ==================== رفع الملفات (محلي) ====================
 export async function uploadFile(formData) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
-  const currentUser = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+    const currentUser = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
 
-  if (!currentUser) throw new Error("User not found");
+    if (!currentUser) throw new Error("User not found");
 
-  const files = formData.getAll("files");
-  const uploadedFiles = [];
+    const files = formData.getAll("files");
+    const uploadedFiles = [];
 
-  // مجلد التخزين المحلي
-  const uploadDir = join(process.cwd(), "public", "uploads", "chat", currentUser.id);
-
-  // أنشئ المجلد إذا لم يكن موجوداً
-  if (!existsSync(uploadDir)) {
-    await mkdir(uploadDir, { recursive: true });
-  }
-
-  for (const file of files) {
-    if (!(file instanceof File)) continue;
-
-    if (file.size > 25 * 1024 * 1024) {
-      throw new Error(`File ${file.name} exceeds 25MB limit`);
+    if (!files || files.length === 0) {
+      throw new Error("No files provided");
     }
 
-    const extension = file.name.split(".").pop();
-    const filename = `${uuidv4()}.${extension}`;
-    const filePath = join(uploadDir, filename);
+    // مجلد التخزين المحلي
+    const uploadDir = join(process.cwd(), "public", "uploads", "chat", currentUser.id);
 
-    // احفظ الملف محلياً
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    // أنشئ المجلد إذا لم يكن موجوداً
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
 
-    // URL للوصول للملف
-    const fileUrl = `/uploads/chat/${currentUser.id}/${filename}`;
+    for (const file of files) {
+      if (!(file instanceof File)) continue;
 
-    uploadedFiles.push({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: fileUrl,
-      path: filePath,
-    });
+      if (file.size > 25 * 1024 * 1024) {
+        throw new Error(`File ${file.name} exceeds 25MB limit`);
+      }
+
+      const extension = file.name.split(".").pop() || "bin";
+      const filename = `${uuidv4()}.${extension}`;
+      const filePath = join(uploadDir, filename);
+
+      // احفظ الملف محلياً
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      await writeFile(filePath, buffer);
+
+      // URL للوصول للملف
+      const fileUrl = `/uploads/chat/${currentUser.id}/${filename}`;
+
+      uploadedFiles.push({
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: file.size,
+        url: fileUrl,
+        path: filePath,
+      });
+    }
+
+    return { success: true, files: uploadedFiles };
+  } catch (error) {
+    console.error("Upload error:", error);
+    throw new Error(`Upload failed: ${error.message}`);
   }
-
-  return { files: uploadedFiles };
 }
 
 // ==================== المحادثات ====================
@@ -110,7 +119,7 @@ export async function sendMessage(conversationId, content, files = []) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  if (!content?.trim() && files.length === 0) throw new Error("Message cannot be empty");
+  if (!content?.trim() && (!files || files.length === 0)) throw new Error("Message cannot be empty");
 
   const currentUser = await db.user.findUnique({
     where: { clerkUserId: userId },
@@ -134,8 +143,14 @@ export async function sendMessage(conversationId, content, files = []) {
     content: content?.trim() || "",
   };
 
-  if (files.length > 0) {
-    messageData.files = files;
+  // Ensure files is properly formatted for Prisma JSON
+  if (files && files.length > 0) {
+    messageData.files = files.map(f => ({
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      url: f.url,
+    }));
   }
 
   const message = await db.message.create({
@@ -231,14 +246,27 @@ export async function getMyConversations() {
 
   if (!currentUser) throw new Error("User not found");
 
-  const where = currentUser.role === "DOCTOR" ? { doctorId: currentUser.id } : { patientId: currentUser.id };
+  const where = currentUser.role === "DOCTOR" 
+    ? { doctorId: currentUser.id } 
+    : { patientId: currentUser.id };
 
   const conversations = await db.conversation.findMany({
     where,
     include: {
       doctor: { select: { id: true, name: true, imageUrl: true, specialty: true } },
       patient: { select: { id: true, name: true, imageUrl: true } },
-      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+      messages: { 
+        orderBy: { createdAt: "desc" }, 
+        take: 1,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          files: true,
+          senderId: true,
+          read: true,
+        }
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -253,12 +281,14 @@ export async function getMyConversations() {
         },
       });
 
+      const lastMsg = conv.messages[0];
+
       return {
         ...conv,
         unreadCount,
-        lastMessage: conv.messages[0]?.content || null,
-        lastMessageTime: conv.messages[0]?.createdAt || conv.updatedAt,
-        lastMessageHasFiles: conv.messages[0]?.files?.length > 0 || false,
+        lastMessage: lastMsg?.content || null,
+        lastMessageTime: lastMsg?.createdAt || conv.updatedAt,
+        lastMessageHasFiles: lastMsg?.files && Array.isArray(lastMsg.files) && lastMsg.files.length > 0,
       };
     })
   );
@@ -310,7 +340,7 @@ export async function deleteMessage(messageId) {
   if (message.senderId !== currentUser.id) throw new Error("Not authorized to delete this message");
 
   // حذف الملفات المحلية
-  if (message.files && message.files.length > 0) {
+  if (message.files && Array.isArray(message.files) && message.files.length > 0) {
     for (const file of message.files) {
       if (file.path && existsSync(file.path)) {
         try {
@@ -338,7 +368,9 @@ export async function getUnreadCount() {
 
   if (!currentUser) return { count: 0 };
 
-  const where = currentUser.role === "DOCTOR" ? { doctorId: currentUser.id } : { patientId: currentUser.id };
+  const where = currentUser.role === "DOCTOR" 
+    ? { doctorId: currentUser.id } 
+    : { patientId: currentUser.id };
 
   const conversations = await db.conversation.findMany({
     where,
@@ -346,6 +378,8 @@ export async function getUnreadCount() {
   });
 
   const conversationIds = conversations.map(c => c.id);
+
+  if (conversationIds.length === 0) return { count: 0 };
 
   const unreadCount = await db.message.count({
     where: {

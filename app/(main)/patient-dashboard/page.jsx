@@ -1,3 +1,5 @@
+"use server";
+
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/actions/user";
 import { getPatientDashboardData } from "@/actions/patient-dashboard";
@@ -12,22 +14,25 @@ export default async function PatientDashboardPage() {
   const data = await getPatientDashboardData();
   if (data.error) redirect("/onboarding");
 
-  // ✅ Get active video call
+  // ✅ نجيب الموعد النشط (24 ساعة قادمة)
   const videoCallData = await getActiveVideoCallForPatient();
   const activeCall = videoCallData?.success ? videoCallData.appointment : null;
 
+  // ✅ fallback: أقرب موعد قادم من الداشبورد
+  const upcomingAppointment = activeCall || data.upcoming?.[0] || null;
+
   return (
     <>
-      {/* 🔔 Video Call Notification */}
-      {activeCall?.id && (
+      {/* 🔔 إشعار المكالمة — يظهر دائماً إذا كان هناك موعد */}
+      {upcomingAppointment?.id && (
         <VideoCallNotification
-          appointmentId={activeCall.id}
-          sessionId={activeCall.videoSessionId}
-          doctorName={activeCall.doctor?.name || "الطبيب"}
+          appointmentId={upcomingAppointment.id}
+          sessionId={upcomingAppointment.videoSessionId}
+          doctorName={upcomingAppointment.doctor?.name || "الطبيب"}
         />
       )}
 
-      <PatientDashboardClient data={data} user={user} />
+      <PatientDashboardClient data={data} />
     </>
   );
 }

@@ -19,6 +19,8 @@ import PatientPaymentCard from "./PatientPaymentCard";
 import { updatePatientProfile } from "@/actions/patient-dashboard";
 import InteractiveBodySection from "./InteractiveBodySection";
 import LogoutButton from "@/components/shared/LogoutButton";
+// ── استيراد ChatWindow الموجود عندك ──────────────────────────────────────
+import ChatWindow from "@/components/chat/ChatWindow";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -55,6 +57,7 @@ function Sidebar({ user, activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
     { key:"prescriptions", label:"الوصفات الطبية",  icon:<FileText        className="h-[35px] w-[35px]"/> },
     { key:"doctors",       label:"أطبائي",           icon:<Stethoscope    className="h-[35px] w-[35px]"/> },
     { key:"medical-record",label:"ملفي الطبي",      icon:<Heart           className="h-[18px] w-[18px]"/> },
+    { key:"messages",      label:"الرسائل",          icon:<MessageSquare   className="h-[18px] w-[18px]"/> },
     { key:"profile",       label:"ملفي الشخصي",     icon:<User           className="h-[35px] w-[35px]"/> },
   ];
 
@@ -103,15 +106,10 @@ function Sidebar({ user, activeTab, setActiveTab, mobileOpen, setMobileOpen }) {
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold uppercase tracking-widest px-3 py-2" style={{color:"rgba(94,234,212,0.4)"}}>القائمة الرئيسية</p>
         {nav.slice(0,6).map(item => <NavBtn key={item.key} item={item}/>)}
-        <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-4 pb-2" style={{color:"rgba(94,234,212,0.4)"}}>الحساب</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-4 pb-2" style={{color:"rgba(94,234,212,0.4)"}}>التواصل</p>
         <NavBtn item={nav[6]}/>
-        <a href="/chat"
-          className="w-full flex items-center gap-3 px-3 py-[10px] rounded-xl text-[13.5px] font-medium transition-all"
-          style={{color:"rgba(255,255,255,0.55)"}}
-          onMouseEnter={e=>{e.currentTarget.style.background=C.sidebarHov;e.currentTarget.style.color="#fff";}}
-          onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color="rgba(255,255,255,0.55)";}}>
-          <MessageSquare className="h-[18px] w-[18px]"/><span>الرسائل</span>
-        </a>
+        <p className="text-[10px] font-semibold uppercase tracking-widest px-3 pt-4 pb-2" style={{color:"rgba(94,234,212,0.4)"}}>الحساب</p>
+        <NavBtn item={nav[7]}/>
       </nav>
 
       {/* Logout */}
@@ -527,7 +525,7 @@ function LocationField({ city, setCity, setLat, setLng }) {
   );
 }
 
-// ── Profile Field (outside ProfileTab to prevent remount on keystroke) ────────
+// ── Profile Field ───────────────────────────────────────────────────────────────
 function ProfileField({ label, icon: Icon, value, onChange, type="text", placeholder }) {
   return (
     <div>
@@ -563,7 +561,6 @@ function ProfileTab({ user }) {
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
 
-  // ── Image upload state ──
   const [previewUrl, setPreviewUrl] = useState(user.imageUrl ?? null);
   const [imageFile,  setImageFile]  = useState(null);
   const [uploading,  setUploading]  = useState(false);
@@ -610,13 +607,11 @@ function ProfileTab({ user }) {
           الصورة الشخصية
         </h2>
         <div className="flex items-center gap-5">
-          {/* صورة قابلة للنقر */}
           <div className="relative shrink-0 cursor-pointer group" onClick={()=>fileInputRef.current?.click()}>
             <Avatar className="h-24 w-24 border-4 transition-all" style={{borderColor:"#99f6e4"}}>
               <AvatarImage src={previewUrl} style={{objectFit:"cover"}}/>
               <AvatarFallback className="text-white text-3xl font-bold" style={{background:C.grad}}>{user.name?.[0]??"م"}</AvatarFallback>
             </Avatar>
-            {/* overlay عند hover */}
             <div className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               style={{background:"rgba(13,148,136,0.55)"}}>
               <Camera className="h-6 w-6 text-white"/>
@@ -627,7 +622,6 @@ function ProfileTab({ user }) {
             </div>
           </div>
 
-          {/* input مخفي */}
           <input
             ref={fileInputRef}
             type="file"
@@ -679,7 +673,6 @@ function ProfileTab({ user }) {
           <LocationField city={city} setCity={setCity} setLat={setLat} setLng={setLng} />
         </div>
 
-        {/* عرض الإحداثيات إذا تم تحديدها */}
         {lat && lng && (
           <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:C.primaryLight, border:"1px solid #99f6e4"}}>
             <MapPin className="h-3.5 w-3.5 shrink-0" style={{color:C.primary}}/>
@@ -813,6 +806,123 @@ function MedicalRecordTab() {
   );
 }
 
+// ── Messages Tab ──────────────────────────────────────────────────────────────
+// ── يستخدم ChatWindow.tsx الموجود عندك ──────────────────────────────────────
+function MessagesTab({ user, conversations = [] }) {
+  const [selectedConversation, setSelectedConversation] = useState(
+    conversations[0] || null
+  );
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4 h-[78vh]">
+
+      {/* قائمة الأطباء */}
+      <div
+        className="bg-white rounded-3xl overflow-hidden"
+        style={{
+          border: "1px solid #ccfbf1",
+          boxShadow: "0 4px 24px rgba(13,148,136,0.06)",
+        }}
+      >
+        <div
+          className="p-4 border-b"
+          style={{ borderColor: "#ccfbf1" }}
+        >
+          <h2
+            className="font-bold text-lg"
+            style={{ color: C.text }}
+          >
+            الأطباء
+          </h2>
+        </div>
+
+        <div className="overflow-y-auto h-[calc(78vh-70px)]">
+          {conversations.length === 0 ? (
+            <div className="p-6 text-center">
+              <p style={{ color: C.textLight }}>
+                لا توجد محادثات
+              </p>
+            </div>
+          ) : (
+            conversations.map((conv) => {
+              const active =
+                selectedConversation?.id === conv.id;
+
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => setSelectedConversation(conv)}
+                  className="w-full p-4 flex items-center gap-3 text-right transition-all"
+                  style={{
+                    background: active
+                      ? "#f0fdfa"
+                      : "transparent",
+                    borderBottom: "1px solid #f0fdfa",
+                  }}
+                >
+                  <Avatar className="h-12 w-12 border-2 border-teal-200">
+                    <AvatarImage src={conv.doctorImage} />
+                    <AvatarFallback>
+                      {conv.doctorName?.[0] || "د"}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="font-semibold text-sm truncate"
+                      style={{ color: C.text }}
+                    >
+                      د. {conv.doctorName}
+                    </p>
+
+                    <p
+                      className="text-xs truncate"
+                      style={{ color: C.textLight }}
+                    >
+                      {conv.doctorSpecialty || "طبيب"}
+                    </p>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* المحادثة */}
+      <div
+        className="bg-white rounded-3xl overflow-hidden"
+        style={{
+          border: "1px solid #ccfbf1",
+          boxShadow: "0 4px 24px rgba(13,148,136,0.06)",
+        }}
+      >
+        {selectedConversation ? (
+          <ChatWindow
+            conversationId={selectedConversation.id}
+            currentUser={{
+              id: user.id,
+              name: user.name,
+              imageUrl: user.imageUrl,
+            }}
+            otherUser={{
+              id: selectedConversation.doctorId,
+              name: selectedConversation.doctorName,
+              imageUrl: selectedConversation.doctorImage,
+              specialty: selectedConversation.doctorSpecialty,
+            }}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <p style={{ color: C.textLight }}>
+              اختر طبيباً لبدء المحادثة
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 // ── Main ──────────────────────────────────────────────────────────────────────
 export function PatientDashboardClient({ data }) {
   const { user, stats, upcoming, past, prescriptions, doctors } = data;
@@ -820,8 +930,27 @@ export function PatientDashboardClient({ data }) {
   const [selectedPrescription, setSelectedPrescription] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const titles = {overview:"لوحة التحكم",upcoming:"المواعيد القادمة",past:"المواعيد السابقة",prescriptions:"الوصفات الطبية",doctors:"أطبائي",profile:"ملفي الشخصي","medical-record":"ملفي الطبي"};
-  const dots   = {overview:C.primary,upcoming:"#f59e0b",past:"#10b981",prescriptions:"#8b5cf6",doctors:"#0891b2",profile:C.primary,"medical-record":"#ef4444"};
+  const titles = {
+    overview:"لوحة التحكم",
+    upcoming:"المواعيد القادمة",
+    past:"المواعيد السابقة",
+    prescriptions:"الوصفات الطبية",
+    doctors:"أطبائي",
+    profile:"ملفي الشخصي",
+    "medical-record":"ملفي الطبي",
+    messages:"الرسائل"
+  };
+
+  const dots = {
+    overview:C.primary,
+    upcoming:"#f59e0b",
+    past:"#10b981",
+    prescriptions:"#8b5cf6",
+    doctors:"#0891b2",
+    profile:C.primary,
+    "medical-record":"#ef4444",
+    messages:C.primary
+  };
 
   return (
     <div className="flex min-h-screen" dir="rtl" style={{background:C.primaryLight}}>
@@ -833,6 +962,12 @@ export function PatientDashboardClient({ data }) {
           {activeTab==="overview" && <OverviewTab data={{...data,user}} onViewPrescription={setSelectedPrescription}/>}
           {activeTab==="profile"  && <ProfileTab user={user}/>}
           {activeTab==="medical-record" && <MedicalRecordTab/>}
+         {activeTab==="messages" && (
+  <MessagesTab
+    user={user}
+    conversations={data.conversations || []}
+  />
+)}
 
           {["upcoming","past","prescriptions","doctors"].includes(activeTab) && (
             <div className="space-y-4">

@@ -1,16 +1,17 @@
+"use client";
+
 import { Stethoscope } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 
-export const metadata = {
-  title: "Doctor Dashboard - Adabibanek",
-  description: "إدارة مواعيدك وتوافر وقتك",
-};
+export default function DoctorDashboardLayout({ children }) {
+  const pathname = usePathname();
+  
+  const hideHeader = pathname?.includes("/face-login") || pathname?.includes("/verification");
 
-export default async function DoctorDashboardLayout({ children }) {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <PageHeader icon={<Stethoscope />} title="Doctor Dashboard" />
-
+    <div className={hideHeader ? "" : "container mx-auto px-4 py-8"}>
+      {!hideHeader && <PageHeader icon={<Stethoscope />} title="Doctor Dashboard" />}
       {children}
     </div>
   );

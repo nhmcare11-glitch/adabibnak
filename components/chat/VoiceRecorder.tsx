@@ -2,41 +2,40 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, Square, Play, Pause, Trash2, Send, Loader2 } from "lucide-react";
-import { formatDuration } from "@/lib/chat-utils";
 
-interface VoiceRecorderProps {
-  onSend: (audioBlob: Blob, duration: number) => void;
-  onCancel: () => void;
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 }
 
-export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) {
+export default function VoiceRecorder({ onSend, onCancel }) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioUrl, setAudioUrl] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackTime, setPlaybackTime] = useState(0);
   const [isSending, setIsSending] = useState(false);
-  const [audioLevel, setAudioLevel] = useState<number[]>(Array(20).fill(0));
+  const [audioLevel, setAudioLevel] = useState(Array(16).fill(0));
+  const [error, setError] = useState(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
-  const animationRef = useRef<number | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerRef = useRef(null);
+  const audioRef = useRef(null);
+  const analyserRef = useRef(null);
+  const dataArrayRef = useRef(null);
+  const animationRef = useRef(null);
+  const streamRef = useRef(null);
 
-  // Audio visualization
   const visualizeAudio = useCallback(() => {
     if (!analyserRef.current || !dataArrayRef.current) return;
-
     const animate = () => {
       if (!analyserRef.current || !dataArrayRef.current) return;
       analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-      const bars = Array.from(dataArrayRef.current).slice(0, 20).map(v => v / 255);
+      const bars = Array.from(dataArrayRef.current).slice(0, 16).map(v => v / 255);
       setAudioLevel(bars);
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -45,10 +44,9 @@ export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) 
 
   const startRecording = async () => {
     try {
+      setError(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
-      // Set up audio context for visualization
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
@@ -57,206 +55,109 @@ export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) 
       analyserRef.current = analyser;
       dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg", "audio/wav"];
+      let selectedMimeType = "audio/webm";
+      for (const mime of mimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
+      mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) audioChunksRef.current.push(event.data); };
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(audioChunksRef.current, { type: selectedMimeType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
         if (animationRef.current) cancelAnimationFrame(animationRef.current);
       };
+      mediaRecorder.onerror = (e) => { setError("خطأ في التسجيل"); cleanup(); };
 
       mediaRecorder.start(100);
       setIsRecording(true);
       setIsPaused(false);
-
-      // Start timer
       let time = 0;
-      timerRef.current = setInterval(() => {
-        time++;
-        setRecordingTime(time);
-        if (time >= 300) stopRecording(); // Max 5 minutes
-      }, 1000);
-
+      timerRef.current = setInterval(() => { time++; setRecordingTime(time); if (time >= 300) stopRecording(); }, 1000);
       visualizeAudio();
-    } catch (err) {
-      console.error("Recording error:", err);
-      alert("لا يمكن الوصول إلى الميكروفون. يرجى التحقق من الأذونات.");
-    }
+    } catch (err) { setError("لا يمكن الوصول إلى الميكروفون"); }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      try { mediaRecorderRef.current.stop(); } catch (e) {}
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     }
   };
 
-  const pauseRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      if (isPaused) {
-        mediaRecorderRef.current.resume();
-        setIsPaused(false);
-        // Resume timer
-        let time = recordingTime;
-        timerRef.current = setInterval(() => {
-          time++;
-          setRecordingTime(time);
-        }, 1000);
-      } else {
-        mediaRecorderRef.current.pause();
-        setIsPaused(true);
-        if (timerRef.current) clearInterval(timerRef.current);
-      }
-    }
+  const cleanup = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
   };
 
   const resetRecording = () => {
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setRecordingTime(0);
-    setPlaybackTime(0);
-    setIsPlaying(false);
-    setAudioLevel(Array(20).fill(0));
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+    cleanup();
+    setAudioBlob(null); setAudioUrl(null); setRecordingTime(0); setPlaybackTime(0);
+    setIsPlaying(false); setIsRecording(false); setIsPaused(false);
+    setAudioLevel(Array(16).fill(0)); setError(null);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
   };
 
   const togglePlayback = () => {
     if (!audioRef.current && audioUrl) {
       audioRef.current = new Audio(audioUrl);
       audioRef.current.onended = () => setIsPlaying(false);
-      audioRef.current.ontimeupdate = () => {
-        if (audioRef.current) setPlaybackTime(audioRef.current.currentTime);
-      };
+      audioRef.current.ontimeupdate = () => { if (audioRef.current) setPlaybackTime(audioRef.current.currentTime); };
     }
-
     if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        audioRef.current.play();
-        setIsPlaying(true);
-      }
+      if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
+      else { audioRef.current.play().catch(e => console.error("Playback error:", e)); setIsPlaying(true); }
     }
   };
 
   const handleSend = async () => {
     if (!audioBlob) return;
     setIsSending(true);
-    await onSend(audioBlob, recordingTime);
-    setIsSending(false);
-    resetRecording();
-    onCancel();
+    try { await onSend(audioBlob, recordingTime); } catch (err) { console.error("Send voice error:", err); }
+    finally { setIsSending(false); resetRecording(); onCancel(); }
   };
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-    };
-  }, [audioUrl]);
+  useEffect(() => { return () => { cleanup(); }; }, []);
 
-  // Recording state
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 bg-red-50 rounded-full px-3 py-1.5 border border-red-100">
+        <span className="text-[10px] text-red-500">{error}</span>
+        <button onClick={() => { setError(null); resetRecording(); }} className="p-1 rounded-full hover:bg-red-100">
+          <Trash2 className="w-3 h-3 text-red-400" />
+        </button>
+      </div>
+    );
+  }
+
   if (isRecording || audioBlob) {
     return (
-      <div className="flex items-center gap-3 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 rounded-full px-4 py-2 border border-teal-200 dark:border-teal-800/50">
-        {/* Audio Waveform */}
-        <div className="flex items-center gap-0.5 h-8">
+      <div className="flex items-center gap-2 bg-[#e8f4f4] rounded-full px-3 py-1.5 border border-[#d0e8e8]">
+        <div className="flex items-center gap-0.5 h-6">
           {audioLevel.map((level, i) => (
-            <div
-              key={i}
-              className={`w-1 rounded-full transition-all duration-100 ${
-                isRecording && !isPaused
-                  ? "bg-teal-500 animate-pulse"
-                  : "bg-teal-300 dark:bg-teal-700"
-              }`}
-              style={{
-                height: `${Math.max(4, level * 32)}px`,
-                opacity: isRecording && !isPaused ? 1 : 0.5,
-              }}
-            />
+            <div key={i} className={`w-0.5 rounded-full transition-all ${isRecording && !isPaused ? "bg-[#0d7377]" : "bg-[#0d7377]/40"}`} style={{ height: `${Math.max(3, level * 24)}px`, opacity: isRecording && !isPaused ? 1 : 0.5 }} />
           ))}
         </div>
-
-        {/* Timer */}
-        <span className={`text-sm font-mono font-medium min-w-[48px] ${
-          isRecording && !isPaused ? "text-red-500 animate-pulse" : "text-teal-700 dark:text-teal-300"
-        }`}>
-          {formatDuration(Math.floor(isRecording ? recordingTime : playbackTime))}
-        </span>
-
-        {/* Controls */}
-        <div className="flex items-center gap-2">
+        <span className={`text-[10px] font-mono font-medium min-w-[36px] ${isRecording && !isPaused ? "text-red-400" : "text-[#0d5c5c]"}`}>{formatDuration(Math.floor(isRecording ? recordingTime : playbackTime))}</span>
+        <div className="flex items-center gap-1">
           {isRecording ? (
             <>
-              <button
-                onClick={isPaused ? startRecording : pauseRecording}
-                className="p-2 rounded-full hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors"
-                title={isPaused ? "استئناف" : "إيقاف مؤقت"}
-              >
-                {isPaused ? (
-                  <Play size={16} className="text-teal-600 dark:text-teal-400" />
-                ) : (
-                  <Pause size={16} className="text-amber-600 dark:text-amber-400" />
-                )}
-              </button>
-              <button
-                onClick={stopRecording}
-                className="p-2 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
-                title="إيقاف التسجيل"
-              >
-                <Square size={14} fill="currentColor" />
-              </button>
+              <button onClick={isPaused ? startRecording : () => {}} className="p-1 rounded-full hover:bg-[#d0e8e8]">{isPaused ? <Play className="w-3 h-3 text-[#0d7377]" /> : <Square className="w-2.5 h-2.5 fill-red-400 text-red-400" />}</button>
+              <button onClick={stopRecording} className="p-1 rounded-full bg-red-400 hover:bg-red-500 text-white"><Square className="w-2.5 h-2.5 fill-current" /></button>
             </>
           ) : (
             <>
-              <button
-                onClick={togglePlayback}
-                className="p-2 rounded-full hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors"
-                title={isPlaying ? "إيقاف" : "تشغيل"}
-              >
-                {isPlaying ? (
-                  <Pause size={16} className="text-teal-600 dark:text-teal-400" />
-                ) : (
-                  <Play size={16} className="text-teal-600 dark:text-teal-400" />
-                )}
-              </button>
-              <button
-                onClick={resetRecording}
-                className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
-                title="حذف"
-              >
-                <Trash2 size={16} className="text-red-500" />
-              </button>
-              <button
-                onClick={handleSend}
-                disabled={isSending}
-                className="p-2 rounded-full bg-teal-500 hover:bg-teal-600 text-white transition-colors disabled:opacity-50"
-                title="إرسال"
-              >
-                {isSending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Send size={16} />
-                )}
-              </button>
+              <button onClick={togglePlayback} className="p-1 rounded-full hover:bg-[#d0e8e8]">{isPlaying ? <Pause className="w-3 h-3 text-[#0d7377]" /> : <Play className="w-3 h-3 text-[#0d7377]" />}</button>
+              <button onClick={resetRecording} className="p-1 rounded-full hover:bg-red-50"><Trash2 className="w-3 h-3 text-red-400" /></button>
+              <button onClick={handleSend} disabled={isSending} className="p-1 rounded-full bg-[#0d7377] hover:bg-[#0a5c5f] text-white disabled:opacity-50">{isSending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}</button>
             </>
           )}
         </div>
@@ -264,17 +165,9 @@ export default function VoiceRecorder({ onSend, onCancel }: VoiceRecorderProps) 
     );
   }
 
-  // Initial state - just the mic button
   return (
-    <button
-      onClick={startRecording}
-      className="p-2.5 rounded-full hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-all duration-200 group"
-      title="تسجيل رسالة صوتية"
-    >
-      <Mic
-        size={20}
-        className="text-slate-500 group-hover:text-teal-600 dark:text-slate-400 dark:group-hover:text-teal-400 transition-colors"
-      />
+    <button onClick={startRecording} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-[#f0f7f7] transition-all group">
+      <Mic className="w-3.5 h-3.5 text-[#6b9e9e] group-hover:text-[#0d7377]" />
     </button>
   );
 }

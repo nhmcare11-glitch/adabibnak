@@ -120,7 +120,7 @@ export async function POST(req) {
     );
 
     // threshold صارم
-    const MATCH_THRESHOLD = 0.45;
+    const MATCH_THRESHOLD = 0.60;
 
     const isMatch =
       distance < MATCH_THRESHOLD;

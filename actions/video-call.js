@@ -6,22 +6,21 @@ import { revalidatePath } from "next/cache";
 import { createNotification } from "./notifications";
 
 // ============================================================
-// NEW: Doctor joins video call → notify patient
+// Doctor joins video call → notify patient
 // ============================================================
 
 export async function doctorJoinedVideoCall(appointmentId) {
   console.log("🔔 doctorJoinedVideoCall called for:", appointmentId);
-  
+
   const { userId: clerkUserId } = await auth();
   console.log("👤 Current clerkUserId:", clerkUserId);
 
   if (!clerkUserId) {
     console.error("❌ No clerkUserId found");
-    throw new Error("Unauthorized - no user ID");
+    throw new Error("غير مصرح — لم يتم العثور على معرف المستخدم");
   }
 
   try {
-    // 1. Find the doctor
     const doctor = await db.user.findUnique({
       where: { clerkUserId },
     });
@@ -29,10 +28,9 @@ export async function doctorJoinedVideoCall(appointmentId) {
 
     if (!doctor || doctor.role !== "DOCTOR") {
       console.error("❌ User is not a doctor:", doctor?.role);
-      throw new Error("غير مصرح لك - لست طبيباً");
+      throw new Error("غير مصرح لك — لست طبيباً");
     }
 
-    // 2. Find the appointment
     const appointment = await db.appointment.findUnique({
       where: { id: appointmentId },
       include: {
@@ -49,10 +47,9 @@ export async function doctorJoinedVideoCall(appointmentId) {
 
     if (appointment.doctorId !== doctor.id) {
       console.error("❌ Doctor mismatch:", appointment.doctorId, "!==", doctor.id);
-      throw new Error("غير مصرح لك - هذا ليس موعدك");
+      throw new Error("غير مصرح لك — هذا ليس موعدك");
     }
 
-    // 3. Update appointment status
     console.log("📝 Updating appointment status to DOCTOR_JOINED...");
     const updated = await db.appointment.update({
       where: { id: appointmentId },
@@ -63,14 +60,13 @@ export async function doctorJoinedVideoCall(appointmentId) {
     });
     console.log("✅ Appointment updated:", updated.videoCallStatus);
 
-    // 4. Create notification for patient
     console.log("📨 Creating notification for patient:", appointment.patientId);
     try {
       await createNotification({
         userId: appointment.patientId,
         type: "VIDEO_CALL_STARTED",
-        title: "📹 الطبيب في الاستشارة",
-        message: `د. ${appointment.doctor.name} دخل غرفة الاستشارة. انقر للانضمام الآن.`,
+        title: "📹 مكالمة واردة",
+        message: `د. ${appointment.doctor.name} انضم إلى غرفة الاستشارة. انقر للانضمام الآن.`,
         link: `/video-call?appointmentId=${appointmentId}`,
         metadata: {
           appointmentId,
@@ -82,7 +78,6 @@ export async function doctorJoinedVideoCall(appointmentId) {
       console.log("✅ Notification created successfully");
     } catch (notifError) {
       console.error("⚠️ Notification creation failed:", notifError.message);
-      // Don't throw - notification failure shouldn't break the call
     }
 
     revalidatePath("/patient-dashboard");
@@ -144,11 +139,11 @@ export async function checkVideoCallStatus(appointmentId) {
 
 export async function patientJoinedVideoCall(appointmentId) {
   console.log("👤 patientJoinedVideoCall called for:", appointmentId);
-  
+
   const { userId: clerkUserId } = await auth();
-  
+
   if (!clerkUserId) {
-    throw new Error("Unauthorized");
+    throw new Error("غير مصرح — لم يتم العثور على معرف المستخدم");
   }
 
   try {
@@ -157,7 +152,7 @@ export async function patientJoinedVideoCall(appointmentId) {
     });
 
     if (!patient || patient.role !== "PATIENT") {
-      throw new Error("غير مصرح لك - لست مريضاً");
+      throw new Error("غير مصرح لك — لست مريضاً");
     }
 
     const appointment = await db.appointment.findUnique({
@@ -169,7 +164,7 @@ export async function patientJoinedVideoCall(appointmentId) {
     }
 
     if (appointment.patientId !== patient.id) {
-      throw new Error("غير مصرح لك - هذا ليس موعدك");
+      throw new Error("غير مصرح لك — هذا ليس موعدك");
     }
 
     await db.appointment.update({
@@ -193,11 +188,11 @@ export async function patientJoinedVideoCall(appointmentId) {
 
 export async function endVideoCall(appointmentId) {
   console.log("📞 endVideoCall called for:", appointmentId);
-  
+
   const { userId: clerkUserId } = await auth();
-  
+
   if (!clerkUserId) {
-    throw new Error("Unauthorized");
+    throw new Error("غير مصرح — لم يتم العثور على معرف المستخدم");
   }
 
   try {
@@ -214,7 +209,7 @@ export async function endVideoCall(appointmentId) {
     }
 
     if (appointment.doctorId !== user.id && appointment.patientId !== user.id) {
-      throw new Error("غير مصرح لك");
+      throw new Error("غير مصرح لك — لا يمكنك إنهاء هذه المكالمة");
     }
 
     await db.appointment.update({
@@ -234,12 +229,12 @@ export async function endVideoCall(appointmentId) {
 }
 
 // ============================================================
-// Get active video call for patient
+// Get active video call for patient (24 hours window)
 // ============================================================
 
 export async function getActiveVideoCallForPatient() {
   const { userId: clerkUserId } = await auth();
-  
+
   if (!clerkUserId) {
     console.log("❌ No user ID in getActiveVideoCallForPatient");
     return { success: false, error: "Unauthorized" };
@@ -259,7 +254,7 @@ export async function getActiveVideoCallForPatient() {
         patientId: patient.id,
         status: { in: ["SCHEDULED", "ONGOING"] },
         startTime: { 
-          lte: new Date(Date.now() + 30 * 60 * 1000),
+          lte: new Date(Date.now() + 24 * 60 * 60 * 1000),
           gte: new Date(Date.now() - 60 * 60 * 1000),
         },
       },
@@ -276,5 +271,120 @@ export async function getActiveVideoCallForPatient() {
   } catch (error) {
     console.error("❌ getActiveVideoCallForPatient ERROR:", error);
     return { success: false, error: error.message };
+  }
+}
+
+// ============================================================
+// Complete appointment (legacy support)
+// ============================================================
+
+export async function completeAppointment(appointmentId) {
+  console.log("✅ completeAppointment called for:", appointmentId);
+
+  const { userId: clerkUserId } = await auth();
+
+  if (!clerkUserId) {
+    throw new Error("غير مصرح — لم يتم العثور على معرف المستخدم");
+  }
+
+  try {
+    await db.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "COMPLETED",
+        videoCallStatus: "ENDED",
+      },
+    });
+
+    revalidatePath("/doctor-dashboard");
+    revalidatePath("/patient-dashboard");
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ completeAppointment ERROR:", error);
+    throw new Error(error.message || "فشل إكمال الموعد");
+  }
+}
+
+// ============================================================
+// Start video consultation (legacy support)
+// ============================================================
+
+export async function startVideoConsultation(appointmentId) {
+  console.log("🚀 startVideoConsultation called for:", appointmentId);
+
+  const { userId: clerkUserId } = await auth();
+
+  if (!clerkUserId) {
+    throw new Error("غير مصرح — لم يتم العثور على معرف المستخدم");
+  }
+
+  try {
+    const doctor = await db.user.findUnique({
+      where: { clerkUserId },
+    });
+
+    if (!doctor || doctor.role !== "DOCTOR") {
+      throw new Error("غير مصرح لك — لست طبيباً");
+    }
+
+    const appointment = await db.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        patient: { select: { id: true, name: true, clerkUserId: true } },
+        doctor: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!appointment) {
+      throw new Error("الموعد غير موجود");
+    }
+
+    if (appointment.doctorId !== doctor.id) {
+      throw new Error("غير مصرح لك — هذا ليس موعدك");
+    }
+
+    let sessionId = appointment.videoSessionId;
+    if (!sessionId) {
+      sessionId = `session-${appointmentId}-${Date.now()}`;
+      await db.appointment.update({
+        where: { id: appointmentId },
+        data: { videoSessionId: sessionId },
+      });
+    }
+
+    await db.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "ONGOING",
+        videoCallStatus: "DOCTOR_JOINED",
+      },
+    });
+
+    try {
+      await createNotification({
+        userId: appointment.patientId,
+        type: "VIDEO_CALL_STARTED",
+        title: "📹 مكالمة واردة",
+        message: `د. ${appointment.doctor.name} بدأ الاستشارة. انقر للانضمام الآن.`,
+        link: `/video-call?appointmentId=${appointmentId}`,
+        metadata: {
+          appointmentId,
+          sessionId,
+          doctorId: doctor.id,
+          type: "VIDEO_CALL_STARTED",
+        },
+      });
+    } catch (notifError) {
+      console.error("⚠️ Notification creation failed:", notifError.message);
+    }
+
+    revalidatePath("/patient-dashboard");
+    revalidatePath("/video-call");
+
+    return { success: true, sessionId };
+  } catch (error) {
+    console.error("❌ startVideoConsultation ERROR:", error);
+    throw new Error(error.message || "فشل بدء الاستشارة");
   }
 }

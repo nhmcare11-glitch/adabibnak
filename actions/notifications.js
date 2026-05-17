@@ -28,7 +28,7 @@ export async function createNotification({
     });
     return { success: true, notification };
   } catch (error) {
-    console.error("Failed to create notification:", error);
+    console.error("فشل إنشاء الإشعار:", error);
     return { success: false, error: error.message };
   }
 }
@@ -59,7 +59,7 @@ export async function getMyNotifications(limit = 20) {
 
     return { notifications, unreadCount };
   } catch (error) {
-    console.error("Failed to get notifications:", error);
+    console.error("فشل جلب الإشعارات:", error);
     return { notifications: [], unreadCount: 0 };
   }
 }
@@ -89,7 +89,7 @@ export async function markNotificationAsRead(notificationId) {
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Failed to mark notification as read:", error);
+    console.error("فشل تحديد الإشعار كمقروء:", error);
     return { success: false };
   }
 }
@@ -119,7 +119,7 @@ export async function markAllNotificationsAsRead() {
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Failed to mark all notifications as read:", error);
+    console.error("فشل تحديد كل الإشعارات كمقروءة:", error);
     return { success: false };
   }
 }
@@ -148,7 +148,7 @@ export async function deleteNotification(notificationId) {
     revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete notification:", error);
+    console.error("فشل حذف الإشعار:", error);
     return { success: false };
   }
 }
