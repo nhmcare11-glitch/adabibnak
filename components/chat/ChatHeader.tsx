@@ -1,15 +1,23 @@
-
 "use client";
 
-import {
-  Phone,
-  Video,
-  MoreVertical,
-  ArrowLeft,
-  Circle,
-  Stethoscope,
-  ShieldCheck,
-} from "lucide-react";
+import { useState } from "react";
+import { Video, MoreVertical, ArrowLeft, Stethoscope, Phone, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+
+interface ChatHeaderProps {
+  otherPerson?: {
+    name?: string;
+    imageUrl?: string;
+    specialty?: string;
+  };
+  isOnline?: boolean;
+  lastSeen?: string;
+  onBack?: () => void;
+  showBackButton?: boolean;
+  currentUserRole?: string;
+  conversationId?: string;
+  onStartVideoCall?: () => void;
+}
 
 export default function ChatHeader({
   otherPerson,
@@ -17,290 +25,139 @@ export default function ChatHeader({
   lastSeen,
   onBack,
   showBackButton = false,
-}) {
+  currentUserRole,
+  conversationId,
+  onStartVideoCall,
+}: ChatHeaderProps) {
+  const [videoRequested, setVideoRequested] = useState(false);
+  const isPatient = currentUserRole === "PATIENT";
+  const isDoctor = currentUserRole === "DOCTOR";
+
+  const handleVideoRequest = async () => {
+    if (isPatient) {
+      // المريض يرسل طلب اتصال فيديو → إشعار للطبيب
+      try {
+        await fetch("/api/notifications/video-request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ conversationId }),
+        });
+        setVideoRequested(true);
+        toast.success("تم إرسال طلب مكالمة الفيديو للطبيب");
+        setTimeout(() => setVideoRequested(false), 10000);
+      } catch {
+        toast.error("فشل إرسال الطلب");
+      }
+    } else if (isDoctor) {
+      // الطبيب يبدأ مكالمة مباشرة
+      onStartVideoCall?.();
+    }
+  };
+
+  const handlePhoneCall = async () => {
+    if (!isDoctor) return;
+    // الطبيب فقط يبدأ مكالمة هاتفية → إشعار للمريض
+    try {
+      await fetch("/api/notifications/phone-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ conversationId }),
+      });
+      toast.success("تم إرسال إشعار المكالمة للمريض");
+    } catch {
+      toast.error("فشل إرسال الإشعار");
+    }
+  };
+
   return (
-    <div
-      className="
-        sticky top-0 z-30
-        border-b border-white/10
-        bg-white/70 dark:bg-[#071919]/70
-        backdrop-blur-2xl
-        shadow-[0_8px_30px_rgba(0,0,0,0.05)]
-      "
-    >
-      {/* TOP GLOW */}
+    <div className="bg-white border-b border-[#e0eeee] px-4 py-2.5 flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
+      <div className="flex items-center gap-3">
+        {showBackButton && (
+          <button
+            onClick={onBack}
+            className="p-1.5 rounded-lg hover:bg-[#f0fafa] transition-colors lg:hidden"
+          >
+            <ArrowLeft size={18} className="text-[#0d7377]" />
+          </button>
+        )}
 
-      <div
-        className="
-          absolute inset-0
-          bg-gradient-to-r
-          from-[#14b8a6]/5
-          via-transparent
-          to-[#14b8a6]/5
-          pointer-events-none
-        "
-      />
-
-      <div className="relative px-5 py-4 flex items-center justify-between">
-        {/* LEFT SECTION */}
-
-        <div className="flex items-center gap-4 min-w-0">
-          {/* BACK BUTTON */}
-
-          {showBackButton && (
-            <button
-              onClick={onBack}
-              className="
-                lg:hidden
-                w-11 h-11 rounded-2xl
-                flex items-center justify-center
-                bg-white/60 dark:bg-white/5
-                border border-white/10
-                backdrop-blur-xl
-                hover:scale-105
-                hover:bg-[#14b8a6]/10
-                transition-all duration-300
-                shadow-lg
-              "
-            >
-              <ArrowLeft
-                size={18}
-                className="text-[#0d5c5c] dark:text-[#4dd0d0]"
-              />
-            </button>
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          {otherPerson?.imageUrl ? (
+            <img
+              src={otherPerson.imageUrl}
+              alt={otherPerson.name}
+              className="w-9 h-9 rounded-full object-cover border border-[#c5e5e5]"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1a9e97] to-[#0d7377] flex items-center justify-center text-white font-bold text-sm">
+              {otherPerson?.name?.charAt(0)?.toUpperCase() || "?"}
+            </div>
           )}
+          <div
+            className={`absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
+              isOnline ? "bg-emerald-500" : "bg-gray-400"
+            }`}
+          />
+        </div>
 
-          {/* AVATAR */}
-
-          <div className="relative flex-shrink-0">
-            {/* Glow */}
-
-            <div
-              className="
-                absolute inset-0 rounded-[28px]
-                bg-[#14b8a6]/20
-                blur-xl
-                scale-110
-              "
-            />
-
-            {otherPerson?.imageUrl ? (
-              <img
-                src={otherPerson.imageUrl}
-                alt={otherPerson.name}
-                className="
-                  relative
-                  w-14 h-14 rounded-[24px]
-                  object-cover
-                  border border-white/20
-                  shadow-[0_10px_30px_rgba(0,0,0,0.12)]
-                "
-              />
-            ) : (
-              <div
-                className="
-                  relative
-                  w-14 h-14 rounded-[24px]
-                  bg-gradient-to-br
-                  from-[#14b8a6]
-                  via-[#0d7377]
-                  to-[#0a5c5f]
-                  flex items-center justify-center
-                  text-white font-bold text-lg
-                  shadow-[0_10px_30px_rgba(13,115,119,0.35)]
-                "
-              >
-                {otherPerson?.name?.charAt(0)?.toUpperCase() || "?"}
-              </div>
+        {/* Info */}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[13px] font-semibold text-[#0d3d3d] truncate">
+              {otherPerson?.name || "مجهول"}
+            </h3>
+            {otherPerson?.specialty && (
+              <span className="text-[10px] text-[#0d7377] bg-[#e6fafa] px-2 py-0.5 rounded-full border border-[#b2e5e5] flex items-center gap-1 whitespace-nowrap">
+                <Stethoscope size={9} />
+                {otherPerson.specialty}
+              </span>
             )}
-
-            {/* ONLINE STATUS */}
-
-            <div
-              className={`
-                absolute -bottom-1 -right-1
-                w-5 h-5 rounded-full
-                border-[3px]
-                border-white dark:border-[#071919]
-                flex items-center justify-center
-                ${
-                  isOnline
-                    ? "bg-emerald-500"
-                    : "bg-[#8ab5b5]"
-                }
-              `}
-            >
-              {isOnline && (
-                <div className="w-full h-full rounded-full bg-emerald-400 animate-ping absolute" />
-              )}
-            </div>
           </div>
-
-          {/* INFO */}
-
-          <div className="min-w-0">
-            {/* NAME */}
-
-            <div className="flex items-center gap-2">
-              <h3
-                className="
-                  text-[15px] font-bold
-                  text-[#0d5c5c]
-                  dark:text-white
-                  truncate
-                "
-              >
-                {otherPerson?.name || "مستخدم"}
-              </h3>
-
-              <div
-                className="
-                  px-2 py-1 rounded-xl
-                  bg-emerald-500/10
-                  border border-emerald-500/20
-                  flex items-center gap-1
-                "
-              >
-                <ShieldCheck
-                  size={12}
-                  className="text-emerald-500"
-                />
-
-                <span className="text-[10px] font-semibold text-emerald-600">
-                  Verified
-                </span>
-              </div>
-            </div>
-
-            {/* STATUS */}
-
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              {otherPerson?.specialty && (
-                <div
-                  className="
-                    flex items-center gap-1.5
-                    px-2.5 py-1 rounded-xl
-                    bg-[#14b8a6]/10
-                    border border-[#14b8a6]/15
-                    backdrop-blur-md
-                  "
-                >
-                  <Stethoscope
-                    size={11}
-                    className="text-[#14b8a6]"
-                  />
-
-                  <span className="text-[11px] font-medium text-[#14b8a6]">
-                    {otherPerson.specialty}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center gap-1.5">
-                <Circle
-                  size={7}
-                  className={`
-                    ${
-                      isOnline
-                        ? "fill-emerald-500 text-emerald-500"
-                        : "fill-[#8ab5b5] text-[#8ab5b5]"
-                    }
-                  `}
-                />
-
-                <span className="text-[11px] text-[#7ba1a1] font-medium">
-                  {isOnline
-                    ? "متصل الآن"
-                    : lastSeen || "غير متصل"}
-                </span>
-              </div>
-            </div>
-          </div>
+          <p className="text-[11px] text-emerald-500 flex items-center gap-1 mt-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+            {isOnline ? "متصل الآن" : lastSeen || "غير متصل"}
+          </p>
         </div>
+      </div>
 
-        {/* ACTIONS */}
+      {/* Actions */}
+      <div className="flex items-center gap-0.5">
 
-        <div className="flex items-center gap-2">
-          {/* PHONE */}
-
+        {/* زر الهاتف — للطبيب فقط */}
+        {isDoctor && (
           <button
-            className="
-              group
-              w-11 h-11 rounded-2xl
-              flex items-center justify-center
-              bg-white/60 dark:bg-white/5
-              border border-white/10
-              backdrop-blur-xl
-              hover:scale-105
-              hover:bg-[#14b8a6]/10
-              transition-all duration-300
-              shadow-lg
-            "
+            onClick={handlePhoneCall}
+            aria-label="مكالمة هاتفية"
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#f0fafa] transition-colors text-[#6b9e9e] hover:text-[#0d7377]"
           >
-            <Phone
-              size={18}
-              className="
-                text-[#6b9e9e]
-                group-hover:text-[#14b8a6]
-                transition-colors
-              "
-            />
+            <Phone size={17} />
           </button>
+        )}
 
-          {/* VIDEO */}
+        {/* زر الفيديو — للجميع لكن بسلوك مختلف */}
+        <button
+          onClick={handleVideoRequest}
+          aria-label={isPatient ? "طلب مكالمة فيديو" : "بدء مكالمة فيديو"}
+          title={isPatient ? (videoRequested ? "تم إرسال الطلب" : "طلب مكالمة فيديو") : "بدء مكالمة فيديو"}
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+            videoRequested
+              ? "bg-emerald-50 text-emerald-500"
+              : "hover:bg-[#f0fafa] text-[#6b9e9e] hover:text-[#0d7377]"
+          }`}
+        >
+          {videoRequested ? <CheckCircle size={17} /> : <Video size={17} />}
+        </button>
 
-          <button
-            className="
-              group
-              w-11 h-11 rounded-2xl
-              flex items-center justify-center
-              bg-white/60 dark:bg-white/5
-              border border-white/10
-              backdrop-blur-xl
-              hover:scale-105
-              hover:bg-[#14b8a6]/10
-              transition-all duration-300
-              shadow-lg
-            "
-          >
-            <Video
-              size={18}
-              className="
-                text-[#6b9e9e]
-                group-hover:text-[#14b8a6]
-                transition-colors
-              "
-            />
-          </button>
-
-          {/* MENU */}
-
-          <button
-            className="
-              group
-              w-11 h-11 rounded-2xl
-              flex items-center justify-center
-              bg-white/60 dark:bg-white/5
-              border border-white/10
-              backdrop-blur-xl
-              hover:scale-105
-              hover:bg-[#14b8a6]/10
-              transition-all duration-300
-              shadow-lg
-            "
-          >
-            <MoreVertical
-              size={18}
-              className="
-                text-[#6b9e9e]
-                group-hover:text-[#14b8a6]
-                transition-colors
-              "
-            />
-          </button>
-        </div>
+        <button
+          aria-label="المزيد"
+          className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#f0fafa] transition-colors text-[#6b9e9e] hover:text-[#0d7377]"
+        >
+          <MoreVertical size={17} />
+        </button>
       </div>
     </div>
   );
 }
-

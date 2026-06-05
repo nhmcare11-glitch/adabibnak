@@ -879,9 +879,15 @@ function MessagesTab({ user, conversations = [] }) {
                       className="text-xs truncate"
                       style={{ color: C.textLight }}
                     >
-                      {conv.doctorSpecialty || "طبيب"}
+                      {conv.lastMessage || conv.doctorSpecialty || "طبيب"}
                     </p>
                   </div>
+
+                  {conv.unreadCount > 0 && (
+                    <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{background: C.primary}}>
+                      {conv.unreadCount}
+                    </span>
+                  )}
                 </button>
               );
             })
@@ -900,17 +906,15 @@ function MessagesTab({ user, conversations = [] }) {
         {selectedConversation ? (
           <ChatWindow
             conversationId={selectedConversation.id}
-            currentUser={{
-              id: user.id,
-              name: user.name,
-              imageUrl: user.imageUrl,
-            }}
-            otherUser={{
-              id: selectedConversation.doctorId,
+            initialMessages={[]}
+            currentUserId={user.id}
+            currentUserRole="PATIENT"
+            otherPerson={{
               name: selectedConversation.doctorName,
               imageUrl: selectedConversation.doctorImage,
               specialty: selectedConversation.doctorSpecialty,
             }}
+            conversations={conversations}
           />
         ) : (
           <div className="h-full flex items-center justify-center">

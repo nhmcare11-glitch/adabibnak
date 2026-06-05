@@ -19,21 +19,18 @@ const isProtectedRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, req) => {
 
-  const { userId } = await auth();
+  const authObject = await auth();
+  const userId = authObject.userId;
 
-  // المستخدم غير مسجل ويحاول دخول Route محمي
   if (!userId && isProtectedRoute(req)) {
 
-    const { redirectToSignIn } = await auth();
-
-    return redirectToSignIn({
+    return authObject.redirectToSignIn({
       returnBackUrl: req.url,
     });
   }
 
   const response = NextResponse.next();
 
-  // منع تخزين صفحات الداشبورد والكاش
   if (isProtectedRoute(req)) {
 
     response.headers.set(
@@ -41,15 +38,8 @@ export default clerkMiddleware(async (auth, req) => {
       "no-store, no-cache, must-revalidate, proxy-revalidate"
     );
 
-    response.headers.set(
-      "Pragma",
-      "no-cache"
-    );
-
-    response.headers.set(
-      "Expires",
-      "0"
-    );
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
   }
 
   return response;

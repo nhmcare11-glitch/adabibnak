@@ -1,7 +1,8 @@
 'use client'
 
 import React from "react";
-import { MapPin, ArrowUpRight, Stethoscope } from "lucide-react";
+import Image from "next/image";
+import { MapPin, ArrowUpRight } from "lucide-react";
 
 export default function FooterEnhanced() {
   return (
@@ -12,8 +13,8 @@ export default function FooterEnhanced() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-8 w-8 rounded-full bg-[#2DBFB8]/15 flex items-center justify-center">
-                <Stethoscope className="h-4 w-4 text-[#2DBFB8]" />
+              <div className="h-8 w-8 rounded-full overflow-hidden">
+                <Image src="//logo-s.png" alt="Adabibnek Logo" width={32} height={32} className="object-cover w-full h-full" />
               </div>
               <h3 className="text-lg font-bold text-[#2DBFB8]">أديبيناك</h3>
             </div>

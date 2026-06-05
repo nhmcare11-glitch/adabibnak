@@ -3,7 +3,8 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Stethoscope, HeartPulse, ArrowLeft } from "lucide-react";
+import Image from "next/image";
+import { Stethoscope, ArrowLeft } from "lucide-react";
 
 export default function FooterWrapper() {
   const pathname = usePathname();
@@ -19,9 +20,9 @@ export default function FooterWrapper() {
           {/* Brand Column */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
-                <HeartPulse className="h-5 w-5 text-[#2DBFB8]" />
-                 </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 overflow-hidden">
+                <Image src="/logo-s.png" alt="Adabibnek" width={40} height={40} className="object-cover w-full h-full" />
+              </div>
              <span className="text-xl font-black text-white">Adabibnek</span>
             </div>
             

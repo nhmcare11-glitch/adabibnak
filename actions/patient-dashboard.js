@@ -67,6 +67,39 @@ export async function getPatientDashboardData() {
   });
   const doctors = Object.values(doctorsMap);
 
+  // ── جلب المحادثات مع الأطباء ──────────────────────────────────────────────
+  const rawConversations = await db.conversation.findMany({
+    where: { patientId: user.id },
+    include: {
+      doctor: { select: { id: true, name: true, imageUrl: true, specialty: true } },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { id: true, content: true, createdAt: true, read: true, senderId: true },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const conversations = await Promise.all(
+    rawConversations.map(async (conv) => {
+      const unreadCount = await db.message.count({
+        where: { conversationId: conv.id, senderId: { not: user.id }, read: false },
+      });
+      const lastMsg = conv.messages[0];
+      return {
+        id: conv.id,
+        doctorId: conv.doctor?.id,
+        doctorName: conv.doctor?.name,
+        doctorImage: conv.doctor?.imageUrl,
+        doctorSpecialty: conv.doctor?.specialty,
+        lastMessage: lastMsg?.content || null,
+        lastMessageTime: lastMsg?.createdAt || conv.updatedAt,
+        unreadCount,
+      };
+    })
+  );
+
   return {
     user,
     stats: {
@@ -79,6 +112,7 @@ export async function getPatientDashboardData() {
     past,
     prescriptions,
     doctors,
+    conversations,
   };
 }
 

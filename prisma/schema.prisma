@@ -26,9 +26,12 @@ model User {
   doctorAppointments   Appointment[]           @relation("DoctorAppointments")
   patientAppointments  Appointment[]           @relation("PatientAppointments")
   availabilities       Availability[]
+  doctorNotes          ConsultationNote[]      @relation("DoctorNotes")
+  patientNotes         ConsultationNote[]      @relation("PatientNotes")
   doctorConversations  Conversation[]          @relation("DoctorConversations")
   patientConversations Conversation[]          @relation("PatientConversations")
   faceVerification     DoctorFaceVerification?
+  medicalRecord        MedicalRecord?
   sentMessages         Message[]               @relation("SentMessages")
   notifications        Notification[]
   patientProfile       PatientProfile?
@@ -37,9 +40,6 @@ model User {
   patientPrescriptions Prescription[]          @relation("PatientPrescriptions")
   salariesApprovedBy   SecretarySalary[]       @relation("SalaryApprovedBy")
   salariesAsSecretary  SecretarySalary[]       @relation("SecretarySalaries")
-  medicalRecord        MedicalRecord?
-  doctorNotes          ConsultationNote[]      @relation("DoctorNotes")
-  patientNotes         ConsultationNote[]      @relation("PatientNotes")
 
   @@map("User")
 }
@@ -84,30 +84,22 @@ model Appointment {
   patientDescription String?
   videoSessionId     String?
   videoSessionToken  String?
-  videoCallStatus    VideoCallStatus?  @default(WAITING)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   cancellationReason String?
   rating             Int?
   consultationType   ConsultationType  @default(REMOTE)
   duration           Int               @default(30)
+  videoCallStatus    VideoCallStatus?  @default(WAITING)
   doctor             User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
   patient            User              @relation("PatientAppointments", fields: [patientId], references: [id])
+  consultationNote   ConsultationNote?
   payment            Payment?
   prescription       Prescription?
-  consultationNote   ConsultationNote?
 
   @@index([status, startTime])
   @@index([doctorId, startTime])
   @@index([patientId, startTime])
-}
-
-enum VideoCallStatus {
-  WAITING
-  DOCTOR_JOINED
-  PATIENT_JOINED
-  IN_PROGRESS
-  ENDED
 }
 
 model Conversation {
@@ -202,8 +194,8 @@ model PatientProfile {
 }
 
 model MedicalRecord {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String    @unique
   firstName          String?
   lastName           String?
   gender             String?
@@ -221,15 +213,16 @@ model MedicalRecord {
   smokingStatus      String?
   pregnancyStatus    String?
   familyDiseases     String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now()) @updatedAt
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([userId])
   @@map("MedicalRecord")
 }
 
 model ConsultationNote {
-  id                String      @id @default(uuid())
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   appointmentId     String      @unique
   doctorId          String
   patientId         String
@@ -238,10 +231,10 @@ model ConsultationNote {
   recommendations   String?
   prescriptionNotes String?
   createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor            User        @relation("DoctorNotes", fields: [doctorId], references: [id])
-  patient           User        @relation("PatientNotes", fields: [patientId], references: [id])
+  updatedAt         DateTime    @default(now()) @updatedAt
+  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  doctor            User        @relation("DoctorNotes", fields: [doctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  patient           User        @relation("PatientNotes", fields: [patientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([appointmentId])
   @@index([doctorId])
@@ -287,6 +280,14 @@ model SecretarySalary {
   @@unique([secretaryId, month, year])
   @@index([secretaryId])
   @@index([status])
+}
+
+enum VideoCallStatus {
+  WAITING
+  DOCTOR_JOINED
+  PATIENT_JOINED
+  IN_PROGRESS
+  ENDED
 }
 
 enum UserRole {

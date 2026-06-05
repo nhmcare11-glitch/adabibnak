@@ -1,89 +1,39 @@
-
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
-export default function TypingIndicator({ name }) {
+interface TypingIndicatorProps {
+  name?: string;
+}
+
+export default function TypingIndicator({ name }: TypingIndicatorProps) {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setStep((prev) => (prev + 1) % 4), 420);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="flex items-end gap-3 mb-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      {/* Avatar Placeholder */}
-
-      <div
-        className="
-          w-9 h-9 rounded-2xl
-          bg-gradient-to-br
-          from-[#dff7f7]
-          to-[#c8eded]
-          shadow-lg
-          border border-white/30
-          flex-shrink-0
-        "
-      />
-
-      {/* Bubble */}
-
-      <div
-        className="
-          relative overflow-hidden
-          px-5 py-4 rounded-[28px] rounded-tl-md
-          bg-white/75 dark:bg-white/5
-          backdrop-blur-2xl
-          border border-[#dceeee]
-          shadow-[0_10px_35px_rgba(0,0,0,0.07)]
-        "
-      >
-        {/* Glow */}
-
-        <div
-          className="
-            absolute inset-0
-            bg-gradient-to-r
-            from-white/10
-            via-transparent
-            to-white/5
-            pointer-events-none
-          "
-        />
-
-        <div className="relative flex items-center gap-3">
-          {/* Animated Dots */}
-
-          <div className="flex items-center gap-1">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{
-                  y: [0, -4, 0],
-                  opacity: [0.4, 1, 0.4],
-                  scale: [1, 1.15, 1],
-                }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  delay: i * 0.15,
-                  ease: "easeInOut",
-                }}
-                className="
-                  w-2 h-2 rounded-full
-                  bg-gradient-to-br
-                  from-[#14b8a6]
-                  to-[#0d7377]
-                  shadow-[0_0_10px_rgba(20,184,166,0.4)]
-                "
-              />
-            ))}
-          </div>
-
-          {/* Text */}
-
-          {name && (
-            <span className="text-xs text-[#6b9e9e] font-medium">
-              {name} يكتب...
-            </span>
-          )}
-        </div>
+    <div className="flex items-end gap-2 mb-2">
+      <div className="w-6 h-6 rounded-full bg-[#d5eaea] flex items-center justify-center text-[9px] font-bold text-[#0d5c5c] flex-shrink-0">
+        {name?.charAt(0)?.toUpperCase() || "د"}
+      </div>
+      <div className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-[#e0eaea] rounded-2xl rounded-tl-sm shadow-sm">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-[#0d7377] transition-all duration-200"
+            style={{
+              opacity: i < step ? 1 : 0.25,
+              transform: i < step ? "scale(1)" : "scale(0.75)",
+            }}
+          />
+        ))}
+        {name && (
+          <span className="text-[9px] text-[#8ab5b5] mr-1">{name} يكتب...</span>
+        )}
       </div>
     </div>
   );
 }
-
