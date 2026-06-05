@@ -1,10 +1,12 @@
 {
+  
   "name": "adabibnak",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-   "dev": "node server.js",
-    "build": "next build",
+    "dev": "node server.js",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint"
   },
