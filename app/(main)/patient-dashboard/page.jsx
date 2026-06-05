@@ -6,6 +6,7 @@ import { getPatientDashboardData } from "@/actions/patient-dashboard";
 import { getActiveVideoCallForPatient } from "@/actions/video-call";
 import { PatientDashboardClient } from "./_components/patient-dashboard-client";
 import VideoCallNotification from "@/components/VideoCallNotification";
+export const dynamic = "force-dynamic";
 
 export default async function PatientDashboardPage() {
   const user = await getCurrentUser();

@@ -39,6 +39,7 @@ import { setUserRole } from "@/actions/onboarding";
 import { doctorFormSchema } from "@/lib/schema";
 import { SPECIALTIES } from "@/lib/specialities";
 import useFetch from "@/hooks/use-fetch";
+export const dynamic = "force-dynamic";
 
 export default function OnboardingPage() {
 

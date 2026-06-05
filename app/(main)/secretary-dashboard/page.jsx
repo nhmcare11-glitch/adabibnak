@@ -8,6 +8,7 @@ import SecretaryPatientsList from "./_components/patients-list";
 import SecretaryDoctorsList from "./_components/doctors-list";
 import ConversationsList from "@/components/conversations-list";
 import SecretaryPaymentsList from "./_components/secretary-payments";
+export const dynamic = "force-dynamic";
 
 export default async function SecretaryDashboardPage() {
   const user = await getCurrentUser();

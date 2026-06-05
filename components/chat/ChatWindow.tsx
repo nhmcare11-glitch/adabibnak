@@ -5,15 +5,13 @@ import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
 import {
-  Search, XCircle, UserPlus, MessageCircle, Loader2,
-  Phone, Video, MoreVertical, ArrowLeft, ChevronLeft,
-  Stethoscope, Clock, Bell, Send, Paperclip, Mic, Smile,
-  LayoutDashboard, Calendar, Archive, HelpCircle, LogOut,
-  FileText, Image, Music, Check, CheckCheck, CheckCircle
+  MessageCircle, Loader2, Phone, Video, MoreVertical, ArrowRight,
+  Stethoscope, Send, Check, CheckCheck, CheckCircle, Search, X
 } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
+import { formatDistanceToNow } from "date-fns";
 
 export default function ChatWindow({
   conversationId,
@@ -27,108 +25,48 @@ export default function ChatWindow({
   const [conversations, setConversations] = useState(initialConversations || []);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
   const [otherPerson] = useState(initialOtherPerson);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [videoRequested, setVideoRequested] = useState(false);
+  // view: "list" | "chat"
+  const [view, setView] = useState("chat");
 
   const isPatient = currentUserRole === "PATIENT";
   const isDoctor = currentUserRole === "DOCTOR";
 
-  const handleVideoRequest = async () => {
-    if (isPatient) {
-      try {
-        await fetch("/api/notifications/video-request", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ conversationId }),
-        });
-        setVideoRequested(true);
-        toast.success("✅ تم إرسال طلب مكالمة الفيديو للطبيب");
-        setTimeout(() => setVideoRequested(false), 10000);
-      } catch {
-        toast.error("فشل إرسال الطلب");
-      }
-    } else if (isDoctor) {
-      toast.info("بدء مكالمة الفيديو...");
-    }
-  };
-
-  const handlePhoneCall = async () => {
-    if (!isDoctor) return;
-    try {
-      await fetch("/api/notifications/phone-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ conversationId }),
-      });
-      toast.success("✅ تم إرسال إشعار المكالمة للمريض");
-    } catch {
-      toast.error("فشل إرسال الإشعار");
-    }
-  };
-
   const bottomRef = useRef(null);
   const messagesContainerRef = useRef(null);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
   const prevConversationId = useRef(conversationId);
   const prevMessagesLength = useRef(0);
-  const isFirstLoad = useRef(true);
 
+  // ── Scroll ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container || !bottomRef.current) return;
-
     const isNewConversation = prevConversationId.current !== conversationId;
     const isNewMessage = messages.length > prevMessagesLength.current;
     const lastMessage = messages[messages.length - 1];
     const isFromMe = lastMessage?.senderId === currentUserId;
 
     if (isNewConversation) {
-      // ✅ محادثة جديدة/قديمة: scroll للأسفل بدون animation
       bottomRef.current.scrollIntoView({ behavior: "auto" });
       prevConversationId.current = conversationId;
-      isFirstLoad.current = false;
     } else if (isNewMessage) {
-      // ✅ رسالة جديدة
       if (isFromMe) {
-        // من المستخدم: scroll دائماً للأسفل
         bottomRef.current.scrollIntoView({ behavior: "smooth" });
       } else {
-        // من الطرف الآخر: scroll فقط لو المستخدم قريب من الأسفل
         const { scrollTop, scrollHeight, clientHeight } = container;
-        const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
-        if (isNearBottom) {
+        if (scrollHeight - scrollTop - clientHeight < 150)
           bottomRef.current.scrollIntoView({ behavior: "smooth" });
-        }
       }
     }
-
     prevMessagesLength.current = messages.length;
   }, [messages, conversationId, currentUserId]);
 
+  // ── API helper ─────────────────────────────────────────────────────────────
   const apiCall = async (url, options = {}) => {
-    const res = await fetch(url, {
-      ...options,
-      credentials: "include",
-    });
-    if (res.status === 401) {
-      setAuthError(true);
-      throw new Error("Unauthorized");
-    }
+    const res = await fetch(url, { ...options, credentials: "include" });
+    if (res.status === 401) { setAuthError(true); throw new Error("Unauthorized"); }
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: "Unknown error" }));
       throw new Error(error.error || `HTTP ${res.status}`);
@@ -136,6 +74,7 @@ export default function ChatWindow({
     return res.json();
   };
 
+  // ── Polling messages ───────────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -148,10 +87,7 @@ export default function ChatWindow({
             if (newMsg && newMsg.id === msg.id) {
               const updatedFiles = msg.files?.map((f, fIdx) => {
                 const newFile = newMsg.files?.[fIdx];
-                if (newFile && (!f.url || f.url === "")) {
-                  return { ...f, url: newFile.url };
-                }
-                return f;
+                return newFile && (!f.url || f.url === "") ? { ...f, url: newFile.url } : f;
               });
               return { ...msg, read: newMsg.read, status: "read", files: updatedFiles || msg.files };
             }
@@ -165,130 +101,107 @@ export default function ChatWindow({
     return () => clearInterval(interval);
   }, [conversationId]);
 
+  // ── Mark read ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const markRead = async () => {
       const hasUnread = messages.some((m) => m.senderId !== currentUserId && !m.read);
-      if (hasUnread) {
-        try {
-          await apiCall("/api/chat", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ conversationId }),
-          });
-          setAuthError(false);
-          setMessages((prev) => prev.map((m) => m.senderId !== currentUserId ? { ...m, read: true, status: "read" } : m));
-        } catch (err) {
-          console.error("Mark read error:", err);
-        }
-      }
+      if (!hasUnread) return;
+      try {
+        await apiCall("/api/chat", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversationId }),
+        });
+        setMessages((prev) => prev.map((m) => m.senderId !== currentUserId ? { ...m, read: true, status: "read" } : m));
+      } catch (err) { console.error("Mark read error:", err); }
     };
     markRead();
   }, [messages, conversationId, currentUserId]);
 
+  // ── Load conversations ─────────────────────────────────────────────────────
   const loadConversations = useCallback(async () => {
     try {
       const data = await apiCall("/api/chat");
-      setAuthError(false);
       setConversations(data.conversations);
-    } catch (err) {
-      console.error("Error loading conversations:", err);
-    }
+    } catch (err) { console.error("Error loading conversations:", err); }
   }, []);
 
-  const handleSearch = async (term) => {
-    setSearchTerm(term);
-    if (term.length < 2) { setSearchResults([]); setShowSearchResults(false); return; }
-    try {
-      const data = await apiCall(`/api/search-doctors?q=${encodeURIComponent(term)}`);
-      setSearchResults(data);
-      setShowSearchResults(true);
-    } catch (err) {
-      console.error("Search error:", err);
+  // ── Video / Phone ──────────────────────────────────────────────────────────
+  const handleVideoRequest = async () => {
+    if (isPatient) {
+      try {
+        await fetch("/api/notifications/video-request", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          credentials: "include", body: JSON.stringify({ conversationId }),
+        });
+        setVideoRequested(true);
+        toast.success("✅ تم إرسال طلب مكالمة الفيديو للطبيب");
+        setTimeout(() => setVideoRequested(false), 10000);
+      } catch { toast.error("فشل إرسال الطلب"); }
+    } else if (isDoctor) {
+      toast.info("بدء مكالمة الفيديو...");
     }
   };
 
-  const startNewConversation = async (doctor) => {
+  const handlePhoneCall = async () => {
+    if (!isDoctor) return;
     try {
-      const data = await apiCall("/api/chat/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorId: doctor.id }),
+      await fetch("/api/notifications/phone-request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        credentials: "include", body: JSON.stringify({ conversationId }),
       });
-      window.location.href = `/chat/${data.conversation.id}`;
-    } catch (err) {
-      if (err.message?.includes("Unauthorized")) toast.error("انتهت الجلسة - يرجى تسجيل الدخول");
-      else toast.error("فشل بدء المحادثة");
-    }
+      toast.success("✅ تم إرسال إشعار المكالمة للمريض");
+    } catch { toast.error("فشل إرسال الإشعار"); }
   };
 
+  // ── Send message ───────────────────────────────────────────────────────────
   const handleSend = async (text, fileList) => {
     if ((!text.trim() && (!fileList || fileList.length === 0)) || isSending) return;
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
-      id: tempId,
-      content: text.trim(),
-      senderId: currentUserId,
-      createdAt: new Date().toISOString(),
-      sender: { id: currentUserId, name: "أنت" },
+      id: tempId, content: text.trim(), senderId: currentUserId,
+      createdAt: new Date().toISOString(), sender: { id: currentUserId, name: "أنت" },
       files: fileList?.map((f) => ({ name: f.name, type: f.type, url: "", size: f.size })) || [],
-      status: "sending",
-      read: false,
-      isTemp: true,
+      status: "sending", read: false, isTemp: true,
     };
     setMessages((prev) => [...prev, optimisticMsg]);
     setIsSending(true);
-    const sentText = text.trim();
     try {
       let uploadedFiles = [];
       if (fileList && fileList.length > 0) {
         const formData = new FormData();
         fileList.forEach((f) => formData.append("files", f));
         const uploadRes = await fetch("/api/chat", { method: "POST", credentials: "include", body: formData });
-        if (!uploadRes.ok) {
-          if (uploadRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); }
-          throw new Error("Upload failed");
-        }
+        if (!uploadRes.ok) { if (uploadRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); } throw new Error("Upload failed"); }
         const uploadData = await uploadRes.json();
         uploadedFiles = uploadData.files || [];
       }
       const messageRes = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ conversationId, content: sentText, files: uploadedFiles }),
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+        body: JSON.stringify({ conversationId, content: text.trim(), files: uploadedFiles }),
       });
-      if (!messageRes.ok) {
-        if (messageRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); }
-        throw new Error("Send failed");
-      }
+      if (!messageRes.ok) { if (messageRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); } throw new Error("Send failed"); }
       const data = await messageRes.json();
       setAuthError(false);
       setMessages((prev) => prev.map((m) => m.id === tempId ? { ...data.message, status: "sent", isTemp: false, files: data.message.files || uploadedFiles } : m));
       await apiCall("/api/chat", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId }) });
       loadConversations();
     } catch (err) {
-      console.error("Send error:", err);
       if (err.message?.includes("Unauthorized")) toast.error("انتهت الجلسة - يرجى تسجيل الدخول");
       else toast.error("فشل إرسال الرسالة");
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-    } finally {
-      setIsSending(false);
-    }
+    } finally { setIsSending(false); }
   };
 
-  const handleSendVoice = async (blob, duration) => {
+  // ── Send voice ─────────────────────────────────────────────────────────────
+  const handleSendVoice = async (blob) => {
     const tempId = `temp-voice-${Date.now()}`;
     const audioFile = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
     const optimisticMsg = {
-      id: tempId,
-      content: "🎤 رسالة صوتية",
-      senderId: currentUserId,
-      createdAt: new Date().toISOString(),
-      sender: { id: currentUserId, name: "أنت" },
+      id: tempId, content: "🎤 رسالة صوتية", senderId: currentUserId,
+      createdAt: new Date().toISOString(), sender: { id: currentUserId, name: "أنت" },
       files: [{ name: audioFile.name, type: audioFile.type, url: "", size: audioFile.size }],
-      status: "sending",
-      read: false,
-      isTemp: true,
+      status: "sending", read: false, isTemp: true,
     };
     setMessages((prev) => [...prev, optimisticMsg]);
     setIsSending(true);
@@ -296,34 +209,23 @@ export default function ChatWindow({
       const formData = new FormData();
       formData.append("files", audioFile);
       const uploadRes = await fetch("/api/chat", { method: "POST", credentials: "include", body: formData });
-      if (!uploadRes.ok) {
-        if (uploadRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); }
-        throw new Error("Upload failed");
-      }
+      if (!uploadRes.ok) { if (uploadRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); } throw new Error("Upload failed"); }
       const uploadData = await uploadRes.json();
       const messageRes = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ conversationId, content: "🎤 رسالة صوتية", files: uploadData.files }),
       });
-      if (!messageRes.ok) {
-        if (messageRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); }
-        throw new Error("Send failed");
-      }
+      if (!messageRes.ok) { if (messageRes.status === 401) { setAuthError(true); throw new Error("Unauthorized"); } throw new Error("Send failed"); }
       const data = await messageRes.json();
       setAuthError(false);
       setMessages((prev) => prev.map((m) => m.id === tempId ? { ...data.message, status: "sent", isTemp: false, files: data.message.files || uploadData.files } : m));
       await apiCall("/api/chat", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conversationId }) });
       loadConversations();
     } catch (err) {
-      console.error("Voice send error:", err);
       if (err.message?.includes("Unauthorized")) toast.error("انتهت الجلسة - يرجى تسجيل الدخول");
       else toast.error("فشل إرسال الرسالة الصوتية");
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-    } finally {
-      setIsSending(false);
-    }
+    } finally { setIsSending(false); }
   };
 
   const groupedMessages = messages.reduce((groups, message) => {
@@ -335,13 +237,11 @@ export default function ChatWindow({
 
   const totalUnread = conversations.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
 
+  // ── Auth error ─────────────────────────────────────────────────────────────
   if (authError) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#f0f7f7]">
         <div className="text-center p-8">
-          <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-          </div>
           <h3 className="text-lg font-bold text-[#0d5c5c] mb-2">انتهت الجلسة</h3>
           <p className="text-sm text-[#6b9e9e] mb-4">يرجى تسجيل الدخول مرة أخرى</p>
           <button onClick={() => window.location.href = "/sign-in"} className="bg-[#0d7377] text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-[#0a5c5f] transition-colors">تسجيل الدخول</button>
@@ -350,220 +250,187 @@ export default function ChatWindow({
     );
   }
 
- return (
-  <div
-    className="
-      flex h-full w-full
-      bg-[#F8FCFB]
-      overflow-hidden
-    "
-    dir="rtl"
-  >
-     
-       
-      {/* ========== MIDDLE: Conversations List ========== */}
-      <aside className={`w-72 bg-white border-l border-[#e0e8e8] flex flex-col ${isMobile ? (sidebarOpen ? "fixed inset-y-0 right-0 z-50" : "hidden") : ""}`}>
-        {/* Mobile overlay */}
-        {isMobile && sidebarOpen && (
-          <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setSidebarOpen(false)} />
-        )}
-
-             </aside>
-
-     {/* ===================== */}
-{/* CHAT */}
-{/* ===================== */}
-
-<main className="flex-1 flex flex-col min-w-0 bg-white">
-  {/* HEADER */}
-
-  <div className="px-3 py-2 border-b border-[#EAEFF3] flex items-center justify-between">
-    <div className="flex items-center gap-2">
-      {isMobile && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="
-            p-1.5
-            rounded-xl
-            hover:bg-[#F4F8F7]
-            transition-colors
-            lg:hidden
-          "
-        >
-          <ArrowLeft className="w-4 h-4 text-slate-500" />
-        </button>
-      )}
-
-      {/* AVATAR */}
-
-      <div className="relative">
-        {otherPerson?.imageUrl ? (
-          <img
-            src={otherPerson.imageUrl}
-            alt={otherPerson.name}
-            className="
-              w-7 h-7
-              rounded-full
-              object-cover
-              border border-[#DCE7E7]
-            "
-          />
-        ) : (
-          <div
-            className="
-              w-7 h-7
-              rounded-full
-              bg-[#0F766E]
-              flex items-center justify-center
-              text-white
-              font-semibold
-              text-[11px]
-            "
-          >
-            {otherPerson?.name
-              ?.charAt(0)
-              ?.toUpperCase() || "?"}
-          </div>
-        )}
-
-        <div
-          className="
-            absolute
-            -bottom-0.5
-            -left-0.5
-            w-2 h-2
-            rounded-full
-            bg-emerald-500
-            border border-white
-          "
-        />
-      </div>
-
-      {/* INFO */}
-
-      <div>
-        <h3 className="text-[11px] font-semibold text-slate-900">
-          {otherPerson?.name || "مجهول"}
-        </h3>
-
-        <div className="flex items-center gap-1 mt-0.5">
-          {otherPerson?.specialty && (
-            <span
-              className="
-                text-[9px]
-                text-[#0F766E]
-                bg-[#EAF5F3]
-                px-1.5 py-[2px]
-                rounded-md
-              "
-            >
-              {otherPerson.specialty}
+  // ══════════════════════════════════════════════════════════════════════════
+  // VIEW: LIST
+  // ══════════════════════════════════════════════════════════════════════════
+  if (view === "list") {
+    return (
+      <div className="flex flex-col h-full bg-white" dir="rtl">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-[#e8f0f0] flex items-center justify-between">
+          <h1 className="text-base font-bold text-[#0d5c5c]">المحادثات</h1>
+          {totalUnread > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {totalUnread} جديد
             </span>
           )}
+        </div>
 
-          <span className="text-[9px] text-emerald-500 flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-emerald-400" />
-            متصل الآن
-          </span>
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto divide-y divide-[#f5fafa]">
+          {conversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full py-20 px-4 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#f5fafa] flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-8 h-8 text-[#d0e8e8]" />
+              </div>
+              <p className="text-sm text-[#6b9e9e]">لا توجد محادثات بعد</p>
+            </div>
+          ) : (
+            conversations.map((conv) => {
+              const otherP = currentUserId === conv.patientId ? conv.doctor : conv.patient;
+              const unread = conv.unreadCount || 0;
+              const isActive = conv.id === conversationId;
+
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => {
+                    window.location.href = `/chat/${conv.id}`;
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-right transition-all hover:bg-[#f9fdfd] ${isActive ? "bg-[#edf7f5]" : ""}`}
+                >
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    {otherP?.imageUrl ? (
+                      <img src={otherP.imageUrl} alt={otherP.name} className="w-11 h-11 rounded-full object-cover border border-[#d0e8e8]" />
+                    ) : (
+                      <div className="w-11 h-11 rounded-full bg-[#0d7377] flex items-center justify-center text-white font-bold text-base">
+                        {otherP?.name?.charAt(0)?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <div className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className={`text-sm font-semibold truncate ${unread > 0 ? "text-[#0d5c5c]" : "text-[#0d5c5c]/80"}`}>
+                        {otherP?.name || "مجهول"}
+                      </span>
+                      {conv.lastMessageTime && (
+                        <span className="text-[10px] text-[#8ab5b5] flex-shrink-0 mr-1">
+                          {formatDistanceToNow(new Date(conv.lastMessageTime), { addSuffix: true, locale: ar })}
+                        </span>
+                      )}
+                    </div>
+                    {otherP?.specialty && (
+                      <p className="text-[11px] text-[#0d7377] flex items-center gap-1 mb-0.5">
+                        <Stethoscope className="w-3 h-3" />
+                        {otherP.specialty}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <p className={`text-xs truncate flex-1 ${unread > 0 ? "text-[#0d5c5c] font-medium" : "text-[#8ab5b5]"}`}>
+                        {conv.lastMessageHasFiles && !conv.lastMessage?.startsWith("📎")
+                          ? `📎 ${conv.lastMessage || "ملف مرفق"}`
+                          : (conv.lastMessage || "لا توجد رسائل بعد")}
+                      </p>
+                      {unread > 0 && (
+                        <span className="flex-shrink-0 mr-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                          {unread}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
-    </div>
+    );
+  }
 
-    {/* ACTIONS */}
+  // ══════════════════════════════════════════════════════════════════════════
+  // VIEW: CHAT
+  // ══════════════════════════════════════════════════════════════════════════
+  return (
+    <div className="flex flex-col h-full bg-white" dir="rtl">
 
-    <div className="flex items-center gap-1">
-      {/* زر الهاتف — للطبيب فقط */}
-      {isDoctor && (
-        <button
-          onClick={handlePhoneCall}
-          aria-label="مكالمة هاتفية"
-          className="w-8 h-8 rounded-xl hover:bg-[#F4F8F7] transition-colors flex items-center justify-center"
-          title="إرسال إشعار مكالمة هاتفية للمريض"
-        >
-          <Phone className="w-3.5 h-3.5 text-slate-500" />
-        </button>
-      )}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="px-3 py-2 border-b border-[#EAEFF3] flex items-center justify-between bg-white">
+        <div className="flex items-center gap-2">
 
-      {/* زر الفيديو — للجميع بسلوك مختلف */}
-      <button
-        onClick={handleVideoRequest}
-        aria-label={isPatient ? "طلب مكالمة فيديو" : "بدء مكالمة فيديو"}
-        title={isPatient ? (videoRequested ? "تم إرسال الطلب ✓" : "طلب مكالمة فيديو من الطبيب") : "بدء مكالمة فيديو"}
-        className={`w-8 h-8 rounded-xl transition-colors flex items-center justify-center ${
-          videoRequested ? "bg-emerald-50" : "hover:bg-[#F4F8F7]"
-        }`}
-      >
-        {videoRequested
-          ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-          : <Video className="w-3.5 h-3.5 text-slate-500" />
-        }
-      </button>
+          {/* زر الرجوع للقائمة */}
+          <button
+            onClick={() => setView("list")}
+            className="p-1.5 rounded-xl hover:bg-[#F4F8F7] transition-colors flex items-center gap-1"
+            aria-label="الرجوع للمحادثات"
+          >
+            <ArrowRight className="w-4 h-4 text-[#0d7377]" />
+            {totalUnread > 0 && (
+              <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                {totalUnread}
+              </span>
+            )}
+          </button>
 
-      <button
-        aria-label="المزيد"
-        className="w-8 h-8 rounded-xl hover:bg-[#F4F8F7] transition-colors flex items-center justify-center"
-      >
-        <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
-      </button>
-    </div>
-  </div>
-
-  {/* MESSAGES */}
-
-  <div
-    ref={messagesContainerRef}
-    className="
-      flex-1
-      overflow-y-auto
-      px-3 py-2
-      bg-[#F8FCFB]
-    "
-  >
-    {Object.entries(groupedMessages).map(
-      ([date, dateMessages]) => (
-        <div key={date} className="mb-4">
-          {/* DATE */}
-
-          <div className="flex items-center justify-center my-3">
-            <div
-              className="
-                bg-white
-                border border-[#E2E8F0]
-                text-slate-500
-                text-[10px]
-                px-3 py-1
-                rounded-full
-                font-medium
-              "
-            >
-              {format(
-                new Date(date),
-                "EEEE, d MMMM yyyy",
-                {
-                  locale: ar,
-                }
-              )}
-            </div>
+          {/* Avatar */}
+          <div className="relative">
+            {otherPerson?.imageUrl ? (
+              <img src={otherPerson.imageUrl} alt={otherPerson.name} className="w-8 h-8 rounded-full object-cover border border-[#DCE7E7]" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#0F766E] flex items-center justify-center text-white font-semibold text-xs">
+                {otherPerson?.name?.charAt(0)?.toUpperCase() || "?"}
+              </div>
+            )}
+            <div className="absolute -bottom-0.5 -left-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-white" />
           </div>
 
-          {/* MESSAGE LIST */}
+          {/* Info */}
+          <div>
+            <h3 className="text-[12px] font-semibold text-slate-900 leading-tight">
+              {otherPerson?.name || "مجهول"}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {otherPerson?.specialty && (
+                <span className="text-[9px] text-[#0F766E] bg-[#EAF5F3] px-1.5 py-[2px] rounded-md">
+                  {otherPerson.specialty}
+                </span>
+              )}
+              <span className="text-[9px] text-emerald-500 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                متصل الآن
+              </span>
+            </div>
+          </div>
+        </div>
 
-          <div className="space-y-[2px]">
-            {dateMessages.map(
-              (msg, index) => {
-                const isOwn =
-                  msg.senderId === currentUserId;
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          {isDoctor && (
+            <button onClick={handlePhoneCall} aria-label="مكالمة هاتفية"
+              className="w-8 h-8 rounded-xl hover:bg-[#F4F8F7] transition-colors flex items-center justify-center">
+              <Phone className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+          )}
+          <button onClick={handleVideoRequest}
+            aria-label={isPatient ? "طلب مكالمة فيديو" : "بدء مكالمة فيديو"}
+            className={`w-8 h-8 rounded-xl transition-colors flex items-center justify-center ${videoRequested ? "bg-emerald-50" : "hover:bg-[#F4F8F7]"}`}>
+            {videoRequested
+              ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+              : <Video className="w-3.5 h-3.5 text-slate-500" />}
+          </button>
+          <button aria-label="المزيد" className="w-8 h-8 rounded-xl hover:bg-[#F4F8F7] transition-colors flex items-center justify-center">
+            <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
+          </button>
+        </div>
+      </div>
 
-                const prevMsg =
-                  index > 0
-                    ? dateMessages[index - 1]
-                    : null;
-
-                const showAvatar =
-                  !prevMsg ||
-                  prevMsg.senderId !==
-                    msg.senderId;
-
+      {/* ── Messages ───────────────────────────────────────────────────────── */}
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-3 py-2 bg-[#F8FCFB]">
+        {Object.entries(groupedMessages).map(([date, dateMessages]) => (
+          <div key={date} className="mb-4">
+            <div className="flex items-center justify-center my-3">
+              <div className="bg-white border border-[#E2E8F0] text-slate-500 text-[10px] px-3 py-1 rounded-full font-medium">
+                {format(new Date(date), "EEEE, d MMMM yyyy", { locale: ar })}
+              </div>
+            </div>
+            <div className="space-y-[2px]">
+              {dateMessages.map((msg, index) => {
+                const isOwn = msg.senderId === currentUserId;
+                const prevMsg = index > 0 ? dateMessages[index - 1] : null;
+                const showAvatar = !prevMsg || prevMsg.senderId !== msg.senderId;
                 return (
                   <MessageBubble
                     key={msg.id}
@@ -571,60 +438,31 @@ export default function ChatWindow({
                     isOwn={isOwn}
                     showAvatar={showAvatar}
                     senderName={msg.sender?.name}
-                    senderImage={
-                      msg.sender?.imageUrl
-                    }
+                    senderImage={msg.sender?.imageUrl}
                   />
                 );
-              }
-            )}
+              })}
+            </div>
           </div>
-        </div>
-      )
-    )}
+        ))}
 
-    {isTyping && (
-      <TypingIndicator
-        name={
-          otherPerson?.name ||
-          "الطرف الآخر"
-        }
-      />
-    )}
+        {isTyping && <TypingIndicator name={otherPerson?.name || "الطرف الآخر"} />}
 
-    {messages.length === 0 && (
-      <div className="flex flex-col items-center justify-center h-full py-16">
-        <div
-          className="
-            w-14 h-14
-            rounded-2xl
-            bg-[#EAF5F3]
-            flex items-center justify-center
-            mb-3
-          "
-        >
-          <MessageCircle className="w-6 h-6 text-[#0F766E]" />
-        </div>
-
-        <p className="text-[12px] text-slate-500">
-          لا توجد رسائل بعد
-        </p>
+        {messages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full py-16">
+            <div className="w-14 h-14 rounded-2xl bg-[#EAF5F3] flex items-center justify-center mb-3">
+              <MessageCircle className="w-6 h-6 text-[#0F766E]" />
+            </div>
+            <p className="text-[12px] text-slate-500">لا توجد رسائل بعد</p>
+          </div>
+        )}
+        <div ref={bottomRef} />
       </div>
-    )}
 
-    <div ref={bottomRef} />
-  </div>
-
-  {/* INPUT */}
-
-  <div className="border-t border-[#EAEFF3] bg-white px-3 py-2">
-    <ChatInput
-      onSend={handleSend}
-      onSendVoice={handleSendVoice}
-      isSending={isSending}
-    />
-  </div>
-</main>
+      {/* ── Input ──────────────────────────────────────────────────────────── */}
+      <div className="border-t border-[#EAEFF3] bg-white px-3 py-2">
+        <ChatInput onSend={handleSend} onSendVoice={handleSendVoice} isSending={isSending} />
+      </div>
     </div>
   );
 }
