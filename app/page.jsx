@@ -107,28 +107,26 @@ function ContactModal({ isOpen, onClose }) {
         </div>
 
        <div className="space-y-2 text-center">
+ <div className="flex flex-col gap-2">
   <a
     href="tel:0696771006"
-    className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
+    className="text-sm font-bold text-[#2DBFB8]"
   >
-    <Phone className="h-3 w-3" />
-    0696 77 10 06
+    📞 0696 77 10 06
   </a>
 
   <a
     href="tel:0696465311"
-    className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
+    className="text-sm font-bold text-[#2DBFB8]"
   >
-    <Phone className="h-3 w-3" />
-    0696 46 53 11
+    📞 0696 46 53 11
   </a>
 
   <a
     href="tel:+213654231808"
-    className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
+    className="text-sm font-bold text-[#2DBFB8]"
   >
-    <Phone className="h-3 w-3" />
-    +213 654 23 18 08
+    📞 +213 654 23 18 08
   </a>
 </div>
 
