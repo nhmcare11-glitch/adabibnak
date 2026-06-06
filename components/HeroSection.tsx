@@ -53,6 +53,16 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
             >
               طبيبك بين يديك
             </h1>
+            <h2
+  className="mb-3 font-black"
+  style={{
+    color: "#2DBFB8",
+    fontSize: "1.1rem",
+    lineHeight: "1.8",
+  }}
+>
+  ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ
+</h2>
              <h1
               className="mb-4 font-black leading-tight"
               style={{ fontSize: "clamp(2rem, 2vw, 4rem)", color: "#2DBFB8" }}
