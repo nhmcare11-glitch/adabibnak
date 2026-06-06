@@ -3,13 +3,13 @@
 // ============================================================
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-export const dynamic = "force-dynamic";
+
 type VerifyState = "loading" | "paid" | "pending" | "failed";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("appointmentId");
 
@@ -33,21 +33,27 @@ export default function PaymentSuccessPage() {
         const res = await fetch(
           `/api/payment/verify?appointmentId=${appointmentId}`
         );
+
         const data = await res.json();
 
         if (data.isPaid) {
           setState("paid");
-          setPaymentData({ paidAt: data.paidAt, amount: data.amount });
+          setPaymentData({
+            paidAt: data.paidAt,
+            amount: data.amount,
+          });
           return;
         }
 
         setAttempts((prev) => {
           const next = prev + 1;
+
           if (next >= 10) {
             setState("pending");
           } else {
             timeoutId = setTimeout(checkPayment, 3000);
           }
+
           return next;
         });
       } catch {
@@ -56,7 +62,10 @@ export default function PaymentSuccessPage() {
     }
 
     checkPayment();
-    return () => clearTimeout(timeoutId);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [appointmentId]);
 
   // ── حالة التحميل ─────────────────────────────────────────
@@ -96,17 +105,20 @@ export default function PaymentSuccessPage() {
           <h1 className="text-3xl font-bold text-emerald-700">
             تم الدفع بنجاح ✓
           </h1>
+
           <p className="text-gray-600">
             تم تأكيد دفعتك وسيقوم الطبيب بتأكيد موعدك قريباً
           </p>
+
           {paymentData?.amount && (
             <p className="text-sm text-gray-500">
-              المبلغ المدفوع:{" "}
-              <strong className="text-gray-700">
+              المبلغ المدفوع:
+              <strong className="mr-2 text-gray-700">
                 {paymentData.amount.toLocaleString("ar-DZ")} دج
               </strong>
             </p>
           )}
+
           {paymentData?.paidAt && (
             <p className="text-sm text-gray-500">
               {new Date(paymentData.paidAt).toLocaleString("ar-DZ")}
@@ -121,6 +133,7 @@ export default function PaymentSuccessPage() {
           >
             عرض مواعيدي
           </Link>
+
           <Link
             href="/"
             className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -156,12 +169,14 @@ export default function PaymentSuccessPage() {
           <h1 className="text-3xl font-bold text-amber-700">
             جاري معالجة الدفع
           </h1>
+
           <p className="text-gray-600">
             يتم التحقق من دفعتك. ستتلقى إشعاراً عند التأكيد.
           </p>
+
           <p className="text-sm text-gray-500">
-            رقم الموعد:{" "}
-            <code className="rounded bg-gray-100 px-1 font-mono text-xs">
+            رقم الموعد:
+            <code className="mr-2 rounded bg-gray-100 px-1 font-mono text-xs">
               {appointmentId}
             </code>
           </p>
@@ -200,6 +215,7 @@ export default function PaymentSuccessPage() {
         <h1 className="text-3xl font-bold text-red-700">
           تعذر التحقق من الدفع
         </h1>
+
         <p className="text-gray-600">
           إذا تمت عملية الدفع، سيتم تأكيد موعدك تلقائياً خلال دقائق.
         </p>
@@ -212,6 +228,7 @@ export default function PaymentSuccessPage() {
         >
           إعادة المحاولة
         </button>
+
         <Link
           href="/appointments"
           className="rounded-lg bg-red-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
@@ -220,5 +237,19 @@ export default function PaymentSuccessPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          جاري التحميل...
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }
