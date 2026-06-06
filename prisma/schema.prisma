@@ -79,7 +79,7 @@ model Appointment {
   doctorId           String
   startTime          DateTime
   endTime            DateTime
-  status             AppointmentStatus @default(SCHEDULED)
+  status             AppointmentStatus @default(PENDING_REVIEW)
   notes              String?
   patientDescription String?
   videoSessionId     String?
@@ -243,27 +243,27 @@ model ConsultationNote {
 }
 
 model Payment {
-  id                 String         @id @default(uuid())
-  appointmentId      String         @unique
-  suggestedMethod    PaymentMethod
-  approvedMethod     PaymentMethod?
-  status             PaymentStatus  @default(PENDING_APPROVAL)
-  approvedById       String?
-  approvedAt         DateTime?
-  amount             Float?
-  adminCommission    Float?
-  notes              String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  paidAt             DateTime?
-  paypalOrderId      String?        @unique
-  paypalStatus       String?
-  // Chargily Pay
-  chargilyCheckoutId String?        @unique
+  id                  String         @id @default(uuid())
+  appointmentId       String         @unique
+  suggestedMethod     PaymentMethod
+  approvedMethod      PaymentMethod?
+  status              PaymentStatus  @default(PENDING_APPROVAL)
+  approvedById        String?
+  approvedAt          DateTime?
+  amount              Float?
+  adminCommission     Float?
+  notes               String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  paidAt              DateTime?
+  paypalOrderId       String?        @unique
+  paypalStatus        String?
+  chargilyCheckoutId  String?        @unique
   chargilyWebhookData Json?
-  paidConfirmedAt    DateTime?
-  appointment        Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  approvedBy         User?          @relation("ApprovedPayments", fields: [approvedById], references: [id])
+  paidConfirmedAt     DateTime?
+  rejectionReason     String?
+  appointment         Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  approvedBy          User?          @relation("ApprovedPayments", fields: [approvedById], references: [id])
 
   @@index([chargilyCheckoutId])
   @@index([status])
@@ -326,6 +326,11 @@ enum AppointmentStatus {
   ONGOING
   MISSED
   PENDING_PAYMENT
+  PENDING_REVIEW
+  APPROVED_FOR_PAYMENT
+  PAYMENT_PENDING
+  PAID
+  REJECTED
 }
 
 enum ConsultationType {

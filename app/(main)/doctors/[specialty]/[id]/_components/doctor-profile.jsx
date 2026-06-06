@@ -33,7 +33,6 @@ export function DoctorProfile({ doctor, availableDays }) {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const router = useRouter();
 
-  // Calculate total available slots
   const totalSlots = availableDays?.reduce(
     (total, day) => total + day.slots.length,
     0
@@ -42,7 +41,6 @@ export function DoctorProfile({ doctor, availableDays }) {
   const toggleBooking = () => {
     setShowBooking(!showBooking);
     if (!showBooking) {
-      // Scroll to booking section when expanding
       setTimeout(() => {
         document.getElementById("booking-section")?.scrollIntoView({
           behavior: "smooth",
@@ -61,7 +59,7 @@ export function DoctorProfile({ doctor, availableDays }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Left column - Doctor Photo and Quick Info (fixed on scroll) */}
+      {/* Left column */}
       <div className="md:col-span-1">
         <div className="md:sticky md:top-24">
           <Card className="border-blue-900/20">
@@ -82,7 +80,7 @@ export function DoctorProfile({ doctor, availableDays }) {
                   )}
                 </div>
 
-                <h2 className="text-xl font-bold text-white mb-1">
+                <h2 className="text-xl font-bold text-foreground mb-1">
                   Dr. {doctor.name}
                 </h2>
 
@@ -122,22 +120,20 @@ export function DoctorProfile({ doctor, availableDays }) {
         </div>
       </div>
 
-      {/* Right column - Doctor Details and Booking Section */}
+      {/* Right column */}
       <div className="md:col-span-2 space-y-6">
         <Card className="border-blue-900/20">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">
-             حول Dr. {doctor.name}
+            <CardTitle className="text-xl font-bold text-foreground">
+              حول Dr. {doctor.name}
             </CardTitle>
-            <CardDescription>
-              الخلفية المهنية والخبرة
-            </CardDescription>
+            <CardDescription>الخلفية المهنية والخبرة</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-blue-400" />
-                <h3 className="text-white font-medium">الوصف</h3>
+                <h3 className="text-foreground font-medium">الوصف</h3>
               </div>
               <p className="text-muted-foreground whitespace-pre-line">
                 {doctor.description}
@@ -149,7 +145,7 @@ export function DoctorProfile({ doctor, availableDays }) {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-blue-400" />
-                <h3 className="text-white font-medium">التوفر</h3>
+                <h3 className="text-foreground font-medium">التوفر</h3>
               </div>
               {totalSlots > 0 ? (
                 <div className="flex items-center">
@@ -162,7 +158,7 @@ export function DoctorProfile({ doctor, availableDays }) {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-لا توجد أي مواعيد متاحة للأيام الأربعة القادمة. يرجى العودة لاحقًا.   
+                    لا توجد أي مواعيد متاحة للأيام الأربعة القادمة. يرجى العودة لاحقًا.
                   </AlertDescription>
                 </Alert>
               )}
@@ -170,12 +166,12 @@ export function DoctorProfile({ doctor, availableDays }) {
           </CardContent>
         </Card>
 
-        {/* Booking Section - Conditionally rendered */}
+        {/* Booking Section */}
         {showBooking && (
           <div id="booking-section">
             <Card className="border-blue-900/20">
               <CardHeader>
-                <CardTitle className="text-xl font-bold text-white">
+                <CardTitle className="text-xl font-bold text-foreground">
                   حجز موعد
                 </CardTitle>
                 <CardDescription>
@@ -185,15 +181,12 @@ export function DoctorProfile({ doctor, availableDays }) {
               <CardContent className="space-y-6">
                 {totalSlots > 0 ? (
                   <>
-                    {/* Slot selection step */}
                     {!selectedSlot && (
                       <SlotPicker
                         days={availableDays}
                         onSelectSlot={handleSlotSelect}
                       />
                     )}
-
-                    {/* Appointment form step */}
                     {selectedSlot && (
                       <AppointmentForm
                         doctorId={doctor.id}
@@ -206,7 +199,7 @@ export function DoctorProfile({ doctor, availableDays }) {
                 ) : (
                   <div className="text-center py-6">
                     <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <h3 className="text-xl font-medium text-white mb-2">
+                    <h3 className="text-xl font-medium text-foreground mb-2">
                       لا توجد مواعيد متاحة
                     </h3>
                     <p className="text-muted-foreground">

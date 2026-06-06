@@ -11,7 +11,7 @@ if (!process.env.CHARGILY_SECRET_KEY) {
 const mode = (process.env.CHARGILY_MODE as "test" | "live") ?? "test";
 
 export const chargilyClient = new ChargilyClient({
-  api_key: process.env.CHARGILY_SECRET_KEY,
+ api_key: process.env.CHARGILY_API_KEY,
   mode,
 });
 
