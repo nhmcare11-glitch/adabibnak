@@ -16,48 +16,59 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
   return (
     <section dir="rtl" className="relative w-full">
 
-      {/* ── الصورة كاملة على الموبايل، مع نص فوقها على الكمبيوتر ── */}
-
-      {/* الكمبيوتر: صورة خلفية مع نص فوقها */}
+      {/* ─────────── DESKTOP ─────────── */}
       <div className="hidden md:block relative w-full overflow-hidden" style={{ minHeight: "100vh" }}>
+
         <img
           src="/home.png"
           alt="hero background"
           className="absolute inset-0 w-full h-full"
-          style={{ objectFit: "cover", objectPosition: "center center", zIndex: 0 }}
+          style={{ objectFit: "cover", objectPosition: "center" }}
         />
+
         <div
           className="absolute inset-0"
           style={{
-            zIndex: 1,
-            background: "linear-gradient(to left, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.2) 100%)",
+            background:
+              "linear-gradient(to left, rgba(0,0,0,0.85), rgba(0,0,0,0.55), rgba(0,0,0,0.2))",
           }}
         />
-        <div className="absolute inset-0 flex flex-col justify-end px-16 pb-24 lg:px-24" style={{ zIndex: 2 }}>
+
+        <div className="absolute inset-0 flex flex-col justify-end px-16 pb-24 lg:px-24">
           <div
             className="max-w-2xl"
             style={{
               opacity: mounted ? 1 : 0,
-              transform: mounted ? "translateY(0)" : "translateY(24px)",
-              transition: "all 0.7s cubic-bezier(0.22,1,0.36,1)",
+              transform: mounted ? "translateY(0)" : "translateY(20px)",
+              transition: "all 0.7s ease",
             }}
           >
-            <h1 className="mb-3 font-black leading-[1.15] text-white drop-shadow-lg"
-              style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}>
-              <span className="text-[#2DBFB8] block mb-1"
-                style={{ fontSize: "clamp(0.95rem, 2.2vw, 1.6rem)", fontWeight: 600 }}>
-                حق في عمق الصحراء
-              </span>
+            <span className="block mb-3 text-white/70 text-sm font-medium">
+              حتى في عمق الصحراء
+            </span>
+
+            <h1
+              className="mb-4 text-white font-black leading-tight"
+              style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+            >
               طبيبك بين يديك
             </h1>
-            <p className="mb-8 max-w-lg leading-relaxed text-[#e4eaea] drop-shadow"
-              style={{ fontSize: "clamp(0.85rem, 1.5vw, 1.1rem)", fontWeight: 400 }}>
+
+            <p
+              className="mb-8 max-w-lg leading-relaxed"
+              style={{
+                fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
+                color: "#ffffff",
+                textShadow: "0 1px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7)",
+              }}
+            >
               نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال
               حجوزات آمنة وسريعة واستشارات متطورة.
             </p>
-            <div className="flex flex-wrap gap-3 items-center">
+
+            <div className="flex gap-3 flex-wrap items-center">
               <Link href={startHref}>
-                <button className="flex items-center gap-2 rounded-full bg-[#2DBFB8] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_25px_rgba(45,191,184,0.5)] transition-all hover:-translate-y-0.5 hover:bg-teal-500">
+                <button className="flex items-center gap-2 rounded-full bg-[#2DBFB8] px-6 py-3 text-sm font-bold text-white shadow-lg hover:bg-teal-500 transition">
                   <Calendar className="h-4 w-4" />
                   اكمل تسجيلك
                 </button>
@@ -68,38 +79,58 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
         </div>
       </div>
 
-      {/* الموبايل: صورة كاملة ثم نص تحتها */}
-      <div className="md:hidden">
-        {/* الصورة كاملة */}
+      {/* ─────────── MOBILE ─────────── */}
+      <div className="md:hidden relative overflow-hidden">
+
         <img
-          src="/home.png"
+          src="/home-mobile.png"
           alt="hero"
           className="w-full"
-          style={{ height: "60vw", objectFit: "cover", objectPosition: "center center" }}
+          style={{
+            height: "75vh",
+            objectFit: "cover",
+            objectPosition: "center",
+          }}
         />
 
-        {/* النص تحت الصورة */}
         <div
-          className="bg-[#071312] px-5 py-8"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(7,19,18,0.95), rgba(7,19,18,0.6), rgba(7,19,18,0.1))",
+          }}
+        />
+
+        <div
+          className="absolute bottom-0 left-0 right-0 px-6 pb-10 z-10"
           style={{
             opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(24px)",
-            transition: "all 0.7s cubic-bezier(0.22,1,0.36,1)",
+            transform: mounted ? "translateY(0)" : "translateY(20px)",
+            transition: "all 0.7s ease",
           }}
         >
-          <span className="text-[#2DBFB8] block mb-1 text-sm font-semibold">
-            حق في عمق الصحراء
+          <span className="block mb-2 text-white/70 text-sm">
+            حتى في عمق الصحراء
           </span>
-          <h1 className="mb-3 text-3xl font-black leading-tight text-white">
+
+          <h1 className="mb-3 text-4xl font-extrabold text-white">
             طبيبك بين يديك
           </h1>
-          <p className="mb-6 text-sm leading-relaxed text-[#e4eaea]">
+
+          <p
+            className="mb-6 leading-7 text-sm"
+            style={{
+              color: "#ffffff",
+              textShadow: "0 1px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7)",
+            }}
+          >
             نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال
             حجوزات آمنة وسريعة واستشارات متطورة.
           </p>
-          <div className="flex flex-wrap gap-3 items-center">
+
+          <div className="flex gap-3 flex-wrap">
             <Link href={startHref}>
-              <button className="flex items-center gap-2 rounded-full bg-[#2DBFB8] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_25px_rgba(45,191,184,0.5)]">
+              <button className="flex items-center gap-2 rounded-full bg-[#2DBFB8] px-6 py-3 text-sm font-bold text-white">
                 <Calendar className="h-4 w-4" />
                 اكمل تسجيلك
               </button>
@@ -107,6 +138,7 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
             <EmergencyButton />
           </div>
         </div>
+
       </div>
 
     </section>
