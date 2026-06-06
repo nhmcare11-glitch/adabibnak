@@ -80,27 +80,25 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
       </div>
 
       {/* ─────────── MOBILE ─────────── */}
-      <div className="md:hidden relative overflow-hidden">
+      <div className="md:hidden relative overflow-hidden" style={{ minHeight: "100svh" }}>
 
         <img
           src="/home-mobile.png"
           alt="hero"
-          className="w-full"
-          style={{
-            height: "75vh",
-            objectFit: "cover",
-            objectPosition: "center",
-          }}
+          className="absolute inset-0 w-full h-full"
+          style={{ objectFit: "cover", objectPosition: "center" }}
         />
 
+        {/* overlay من الأسفل للأعلى لإظهار النص */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to top, rgba(7,19,18,0.95), rgba(7,19,18,0.6), rgba(7,19,18,0.1))",
+              "linear-gradient(to top, rgba(7,19,18,0.96) 0%, rgba(7,19,18,0.75) 50%, rgba(7,19,18,0.2) 100%)",
           }}
         />
 
+        {/* النص فوق الصورة في الأسفل */}
         <div
           className="absolute bottom-0 left-0 right-0 px-6 pb-10 z-10"
           style={{
