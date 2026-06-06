@@ -106,7 +106,7 @@ function ContactModal({ isOpen, onClose }) {
           <h3 className="text-sm font-bold text-[#062220] dark:text-white">تواصل معنا</h3>
         </div>
 
-        <div className="space-y-2 text-center">
+       <div className="space-y-2 text-center">
   <a
     href="tel:0696771006"
     className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
@@ -128,9 +128,10 @@ function ContactModal({ isOpen, onClose }) {
     className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
   >
     <Phone className="h-3 w-3" />
-    0654 23 18 08
+    +213 654 23 18 08
   </a>
 </div>
+
         {sent && (
           <div className="mb-2 rounded-md bg-green-50 p-2 text-center dark:bg-green-900/20">
             <CheckCircle className="mx-auto h-4 w-4 text-green-500" />
