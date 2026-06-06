@@ -106,20 +106,31 @@ function ContactModal({ isOpen, onClose }) {
           <h3 className="text-sm font-bold text-[#062220] dark:text-white">تواصل معنا</h3>
         </div>
 
-        <div className="mb-2 rounded-lg bg-[#2DBFB8]/10 p-2 text-center">
-          <p className="text-[10px] text-[#6b7a7a] dark:text-slate-400">السكرتيرة</p>
-          <a 
-            href="tel:0696771006" 
-            className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
-          >
-            <Phone className="h-3 w-3" />
-             0696 77 10 06
-             0696 46 53 11
-             0654 23 18 08
-        
-          </a>
-        </div>
+        <div className="space-y-2 text-center">
+  <a
+    href="tel:0696771006"
+    className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
+  >
+    <Phone className="h-3 w-3" />
+    0696 77 10 06
+  </a>
 
+  <a
+    href="tel:0696465311"
+    className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
+  >
+    <Phone className="h-3 w-3" />
+    0696 46 53 11
+  </a>
+
+  <a
+    href="tel:+213654231808"
+    className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
+  >
+    <Phone className="h-3 w-3" />
+    0654 23 18 08
+  </a>
+</div>
         {sent && (
           <div className="mb-2 rounded-md bg-green-50 p-2 text-center dark:bg-green-900/20">
             <CheckCircle className="mx-auto h-4 w-4 text-green-500" />
