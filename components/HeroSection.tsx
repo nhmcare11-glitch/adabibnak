@@ -47,13 +47,11 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
               حتى في عمق الصحراء
             </span>
 
-            <h1
-              className="mb-4 font-black leading-tight"
-              style={{ fontSize: "clamp(2rem, 5vw, 4rem)", color: "#2DBFB8" }}
-            >
-              طبيبك بين يديك
-            </h1>
-            <h2
+           <h1 className="mb-3 text-4xl font-extrabold" style={{ color: "#2DBFB8" }}>
+  طبيبك بين يديك
+</h1>
+
+<h2
   className="mb-3 font-black"
   style={{
     color: "#2DBFB8",
@@ -63,13 +61,7 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
 >
   ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ
 </h2>
-             <h1
-              className="mb-4 font-black leading-tight"
-              style={{ fontSize: "clamp(2rem, 2vw, 4rem)", color: "#2DBFB8" }}
-            >
-             ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ
-            </h1>
-
+             
             <p
               className="mb-8 max-w-lg leading-relaxed"
               style={{
