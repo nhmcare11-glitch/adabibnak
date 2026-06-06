@@ -124,21 +124,39 @@ export default function FooterWrapper() {
 
             {/* Social or Contact */}
             <div className="mt-6">
-              <h4 className="text-[#2DBFB8] font-bold mb-3 text-sm">تواصل معنا</h4>
-              <a 
-                href="tel:0696771006" 
-                className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-2"
-              >
-               <span>📞</span>
-                0696 77 10 06
-              </a>
-                            <a 
-                href="tel:0696771006" 
-                className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-2"
-              >
-                <span>📨</span>
-               nhm.care11@gmail.com
-              </a>
+             <h4 className="text-[#2DBFB8] font-bold mb-3 text-sm">تواصل معنا</h4>
+
+<a
+  href="tel:0696771006"
+  className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-2"
+>
+  <span>📞</span>
+  0696 77 10 06
+</a>
+
+<a
+  href="tel:0696465311"
+  className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-2"
+>
+  <span>📞</span>
+  0696 46 53 11
+</a>
+
+<a
+  href="tel:+213654231808"
+  className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-2"
+>
+  <span>📞</span>
+  +213 654 23 18 08
+</a>
+
+<a
+  href="mailto:nhm.care11@gmail.com"
+  className="text-white/80 hover:text-[#2DBFB8] transition text-sm flex items-center gap-2"
+>
+  <span>📨</span>
+  nhm.care11@gmail.com
+</a>
             </div>
           </div>
         </div>

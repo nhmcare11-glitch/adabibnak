@@ -129,6 +129,7 @@ function ContactModal({ isOpen, onClose }) {
     📞 +213 654 23 18 08
   </a>
 </div>
+</div>
 
         {sent && (
           <div className="mb-2 rounded-md bg-green-50 p-2 text-center dark:bg-green-900/20">
