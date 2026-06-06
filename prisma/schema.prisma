@@ -243,23 +243,30 @@ model ConsultationNote {
 }
 
 model Payment {
-  id              String         @id @default(uuid())
-  appointmentId   String         @unique
-  suggestedMethod PaymentMethod
-  approvedMethod  PaymentMethod?
-  status          PaymentStatus  @default(PENDING_APPROVAL)
-  approvedById    String?
-  approvedAt      DateTime?
-  amount          Float?
-  adminCommission Float?
-  notes           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  paidAt          DateTime?
-  paypalOrderId   String?        @unique
-  paypalStatus    String?
-  appointment     Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  approvedBy      User?          @relation("ApprovedPayments", fields: [approvedById], references: [id])
+  id                 String         @id @default(uuid())
+  appointmentId      String         @unique
+  suggestedMethod    PaymentMethod
+  approvedMethod     PaymentMethod?
+  status             PaymentStatus  @default(PENDING_APPROVAL)
+  approvedById       String?
+  approvedAt         DateTime?
+  amount             Float?
+  adminCommission    Float?
+  notes              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  paidAt             DateTime?
+  paypalOrderId      String?        @unique
+  paypalStatus       String?
+  // Chargily Pay
+  chargilyCheckoutId String?        @unique
+  chargilyWebhookData Json?
+  paidConfirmedAt    DateTime?
+  appointment        Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  approvedBy         User?          @relation("ApprovedPayments", fields: [approvedById], references: [id])
+
+  @@index([chargilyCheckoutId])
+  @@index([status])
 }
 
 model SecretarySalary {
@@ -318,6 +325,7 @@ enum AppointmentStatus {
   CANCELLED
   ONGOING
   MISSED
+  PENDING_PAYMENT
 }
 
 enum ConsultationType {
@@ -336,6 +344,7 @@ enum PaymentMethod {
   CARD
   FREE
   DEFERRED
+  CHARGILY
 }
 
 enum PaymentStatus {
@@ -343,6 +352,8 @@ enum PaymentStatus {
   APPROVED
   REJECTED
   PAID
+  FAILED
+  EXPIRED
 }
 
 enum SalaryStatus {

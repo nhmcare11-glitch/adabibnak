@@ -43,13 +43,13 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
               transition: "all 0.7s ease",
             }}
           >
-            <span className="block mb-3 text-white/70 text-sm font-medium">
+            <span className="block mb-3 text-sm font-medium" style={{ color: "rgba(255,255,255,0.60)" }}>
               حتى في عمق الصحراء
             </span>
 
             <h1
-              className="mb-4 text-white font-black leading-tight"
-              style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+              className="mb-4 font-black leading-tight"
+              style={{ fontSize: "clamp(2rem, 5vw, 4rem)", color: "#2DBFB8" }}
             >
               طبيبك بين يديك
             </h1>
@@ -58,8 +58,8 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
               className="mb-8 max-w-lg leading-relaxed"
               style={{
                 fontSize: "clamp(0.9rem, 1.5vw, 1.1rem)",
-                color: "#ffffff",
-                textShadow: "0 1px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7)",
+                color: "#cbd5d5",
+                textShadow: "0 1px 8px rgba(0,0,0,0.6)",
               }}
             >
               نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال
@@ -89,7 +89,6 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
           style={{ objectFit: "cover", objectPosition: "center" }}
         />
 
-        {/* overlay من الأسفل للأعلى لإظهار النص */}
         <div
           className="absolute inset-0"
           style={{
@@ -98,7 +97,6 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
           }}
         />
 
-        {/* النص فوق الصورة في الأسفل */}
         <div
           className="absolute bottom-0 left-0 right-0 px-6 pb-10 z-10"
           style={{
@@ -107,19 +105,19 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
             transition: "all 0.7s ease",
           }}
         >
-          <span className="block mb-2 text-white/70 text-sm">
+          <span className="block mb-2 text-sm" style={{ color: "rgba(255,255,255,0.60)" }}>
             حتى في عمق الصحراء
           </span>
 
-          <h1 className="mb-3 text-4xl font-extrabold text-white">
+          <h1 className="mb-3 text-4xl font-extrabold" style={{ color: "#2DBFB8" }}>
             طبيبك بين يديك
           </h1>
 
           <p
             className="mb-6 leading-7 text-sm"
             style={{
-              color: "#ffffff",
-              textShadow: "0 1px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7)",
+              color: "#cbd5d5",
+              textShadow: "0 1px 8px rgba(0,0,0,0.6)",
             }}
           >
             نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال

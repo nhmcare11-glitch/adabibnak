@@ -113,7 +113,10 @@ function ContactModal({ isOpen, onClose }) {
             className="flex items-center justify-center gap-1 text-sm font-bold text-[#2DBFB8] hover:scale-105"
           >
             <Phone className="h-3 w-3" />
-            0696 77 10 06
+             0696 77 10 06
+             0696 46 53 11
+             0654 23 18 08
+        
           </a>
         </div>
 
@@ -338,7 +341,7 @@ export default function Home() {
             <ScrollReveal>
               <div className="mb-10 text-center">
                 <h2 className="mb-2 text-2xl font-black text-[#2DBFB8] dark:text-[#2DBFB8] md:text-3xl">
-                  لماذا تختار Adabibnek?
+                  لماذا تختار "Adabibnek"؟
                 </h2>
                 <p className="text-sm text-[#6b7a7a] dark:text-slate-400">
                   نجمع بين التكنولوجيا والرعاية الطبية وفق أعلى معايير العالمية
@@ -357,7 +360,7 @@ export default function Home() {
                         <Stethoscope className="h-6 w-6 text-white" />
                       </div>
                       <h3 className="mb-3 text-xl font-black text-[#2DBFB8]">تشخيص عن بعد</h3>
-                      <p className="text-sm leading-relaxed text-white/90">
+                      <p className="text-sm leading-relaxed  text-[#080909] dark:text-slate-400"> 
                         فريق طبي متكامل متاح في أوقات الحاجة، تشخيص فوري متكامل مع تتبع حالتك الصحية وإرسال تقارير دقيقة.
                       </p>
                     </div>
@@ -396,7 +399,7 @@ export default function Home() {
                       <ClipboardList className="h-5 w-5 text-[#2DBFB8]" />
                     </div>
                     <h3 className="mb-2 font-bold text-[#2DBFB8]">نخبة الأطباء</h3>
-                    <p className="text-sm leading-relaxed text-[#6b7a7a] dark:text-slate-400">
+                    <p className="text-sm leading-relaxed text-white md:text-3xl lg:text-4xl">
                       فريق من أفضل الأطباء في مختلف التخصصات متاح لك على مدار الساعة في جميع أنحاء الجزائر.
                     </p>
                   </TiltCard>
