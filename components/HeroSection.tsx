@@ -24,7 +24,7 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
         src="/home.png"
         alt="hero background"
         className="absolute inset-0 w-full h-full"
-       style={{ objectFit: "cover", objectPosition: "30% center", zIndex: 0 }}
+       style={{ objectFit: "cover", objectPosition: "20% center", zIndex: 0 }}
       />
 
       {/* Overlay — أقوى على الموبايل */}
