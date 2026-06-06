@@ -637,7 +637,7 @@ select:focus {
 
 @media (max-width: 768px) {
   .hero-img {
-    object-position: 25% center;
+    object-position: 0% center;
   }
 }
 }
