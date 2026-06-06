@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-
+export const dynamic = "force-dynamic";
 type VerifyState = "loading" | "paid" | "pending" | "failed";
 
 export default function PaymentSuccessPage() {
