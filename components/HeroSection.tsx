@@ -20,11 +20,15 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
       style={{ minHeight: "100vh" }}
     >
       {/* الصورة */}
-      <img
+     <img
   src="/home.png"
   alt="hero background"
-  className="absolute inset-0 w-full h-full hero-img"
-  style={{ objectFit: "cover", zIndex: 0 }}
+  className="absolute inset-0 w-full h-full"
+  style={{ 
+    objectFit: "cover", 
+    objectPosition: "left center",
+    zIndex: 0 
+  }}
 />
 
       {/* Overlay — أقوى على الموبايل */}

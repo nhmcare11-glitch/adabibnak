@@ -631,13 +631,5 @@ select:focus {
     box-shadow: 0 0 0 0 rgba(20,184,166,0);
   }
 }
-.hero-img {
-  object-position: 30% center;
-}
 
-@media (max-width: 768px) {
-  .hero-img {
-    object-position: 0% center;
-  }
-}
 }
