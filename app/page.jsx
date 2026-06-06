@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import HeroSection from "@/components/HeroSection";
-import EmergencyButton from "@/components/ui/emergency-button";
 import {
   Stethoscope, Baby, Brain, Heart,
   Star, HeartPulse, ClipboardList,
@@ -92,7 +91,6 @@ function ContactModal({ isOpen, onClose }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close */}
         <button 
           onClick={() => !sending && onClose()}
           disabled={sending}
@@ -101,7 +99,6 @@ function ContactModal({ isOpen, onClose }) {
           <X className="h-3 w-3" />
         </button>
 
-        {/* Header */}
         <div className="mb-2 text-center">
           <div className="mx-auto mb-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#2DBFB8]/15">
             <MessageCircle className="h-4 w-4 text-[#2DBFB8]" />
@@ -109,7 +106,6 @@ function ContactModal({ isOpen, onClose }) {
           <h3 className="text-sm font-bold text-[#062220] dark:text-white">تواصل معنا</h3>
         </div>
 
-        {/* Phone */}
         <div className="mb-2 rounded-lg bg-[#2DBFB8]/10 p-2 text-center">
           <p className="text-[10px] text-[#6b7a7a] dark:text-slate-400">السكرتيرة</p>
           <a 
@@ -121,7 +117,6 @@ function ContactModal({ isOpen, onClose }) {
           </a>
         </div>
 
-        {/* Success */}
         {sent && (
           <div className="mb-2 rounded-md bg-green-50 p-2 text-center dark:bg-green-900/20">
             <CheckCircle className="mx-auto h-4 w-4 text-green-500" />
@@ -129,7 +124,6 @@ function ContactModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="mb-2 rounded-md bg-red-50 p-2 text-center dark:bg-red-900/20">
             <AlertCircle className="mx-auto h-3 w-3 text-red-500" />
@@ -137,7 +131,6 @@ function ContactModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* Form */}
         {!sent && (
           <form onSubmit={handleSubmit} className="space-y-1.5">
             <div>
@@ -204,7 +197,6 @@ function ContactModal({ isOpen, onClose }) {
           إلى: nhm.care11@gmail.com
         </p>
       </div>
-
     </div>
   );
 }
@@ -224,16 +216,8 @@ function useScrollReveal(threshold = 0.15) {
       },
       { threshold }
     );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => { if (ref.current) observer.unobserve(ref.current); };
   }, [threshold]);
 
   return { ref, isVisible };
@@ -340,33 +324,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Contact Modal */}
       <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
 
       <div className="relative overflow-hidden bg-[#f5f7f9] dark:bg-[#071312] transition-colors duration-500">
         <ScrollToTopButton />
 
-        {/* ══════════════════════════════════
-            زر طوارئ عائم للموبايل فقط
-        ══════════════════════════════════ */}
-        <div className="fixed bottom-24 right-6 z-50 md:hidden">
-          <EmergencyButton />
-        </div>
-
-        {/* ══════════════════════════════════
-            1. HERO
-        ══════════════════════════════════ */}
+        {/* HERO */}
         <div id="hero"><HeroSection startHref={startHref} /></div>
 
-        {/* ══════════════════════════════════
-            2. WHY SECTION
-        ══════════════════════════════════ */}
+        {/* WHY SECTION */}
         <section id="why" className="py-20" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
             <ScrollReveal>
               <div className="mb-10 text-center">
                 <h2 className="mb-2 text-2xl font-black text-[#2DBFB8] dark:text-[#2DBFB8] md:text-3xl">
-                  لماذا تختارAdabibnek?
+                  لماذا تختار Adabibnek?
                 </h2>
                 <p className="text-sm text-[#6b7a7a] dark:text-slate-400">
                   نجمع بين التكنولوجيا والرعاية الطبية وفق أعلى معايير العالمية
@@ -397,7 +369,7 @@ export default function Home() {
                     <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#2DBFB8]/15">
                       <HeartPulse className="h-5 w-5 text-[#2DBFB8]" />
                     </div>
-                    <h3 className="mb-2 font-bold text-[#2DBFB8] dark:text-[#2DBFB8]">تحليلات ذكية لصحتك</h3>
+                    <h3 className="mb-2 font-bold text-[#2DBFB8]">تحليلات ذكية لصحتك</h3>
                     <p className="text-sm leading-relaxed text-[#6b7a7a] dark:text-slate-400">
                       نظام يعتمد على الذكاء الاصطناعي لتحليل بياناتك وتقديم توصيات صحية استباقية دقيقة.
                     </p>
@@ -411,7 +383,7 @@ export default function Home() {
                     <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#2DBFB8]/15">
                       <Brain className="h-5 w-5 text-[#2DBFB8]" />
                     </div>
-                    <h3 className="mb-2 font-bold text-[#2DBFB8] dark:text-[#2DBFB8]">تغطية صحراوية كاملة</h3>
+                    <h3 className="mb-2 font-bold text-[#2DBFB8]">تغطية صحراوية كاملة</h3>
                     <p className="text-sm leading-relaxed text-[#6b7a7a] dark:text-slate-400">
                       شبكتنا تتيح التواصل الطبي في أبعد الأماكن بفضل تقنيات البيانات المتطورة.
                     </p>
@@ -423,7 +395,7 @@ export default function Home() {
                     <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#2DBFB8]/15">
                       <ClipboardList className="h-5 w-5 text-[#2DBFB8]" />
                     </div>
-                    <h3 className="mb-2 font-bold text-[#2DBFB8] dark:text-[#2DBFB8]">نخبة الأطباء</h3>
+                    <h3 className="mb-2 font-bold text-[#2DBFB8]">نخبة الأطباء</h3>
                     <p className="text-sm leading-relaxed text-[#6b7a7a] dark:text-slate-400">
                       فريق من أفضل الأطباء في مختلف التخصصات متاح لك على مدار الساعة في جميع أنحاء الجزائر.
                     </p>
@@ -434,9 +406,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════
-            3. SERVICES GRID
-        ══════════════════════════════════ */}
+        {/* SERVICES */}
         <section id="services" className="bg-[#f0f2f5] py-20 dark:bg-[#071312]" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
             <ScrollReveal>
@@ -470,7 +440,7 @@ export default function Home() {
                       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#2DBFB8]/12 transition group-hover:bg-[#2DBFB8]/22">
                         {s.icon}
                       </div>
-                      <h3 className="mb-2 font-bold text-[#2DBFB8] dark:text-[#2DBFB8]">{s.title}</h3>
+                      <h3 className="mb-2 font-bold text-[#2DBFB8]">{s.title}</h3>
                       <p className="text-xs leading-relaxed text-[#6b7a7a] dark:text-slate-400">{s.desc}</p>
                     </div>
                   </TiltCard>
@@ -480,31 +450,28 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════
-            4. CTA DARK CARD
-        ══════════════════════════════════ */}
+        {/* CTA */}
         <section className="py-20" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
             <ScrollReveal>
               <div className="relative overflow-hidden rounded-3xl bg-[#062220] shadow-2xl dark:bg-[#031410]">
                 <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[#2DBFB8]/15 blur-[80px]" />
                 <div className="pointer-events-none absolute -bottom-16 right-32 h-48 w-48 rounded-full bg-[#2DBFB8]/10 blur-[60px]" />
-
-                <div className="relative z-10 flex flex-col items-center gap-8 p-10 md:flex-row md:items-center md:justify-between md:p-14">
+                <div className="relative z-10 flex flex-col items-center gap-8 p-10 md:flex-row md:justify-between md:p-14">
                   <div className="max-w-lg text-right">
                     <h2 className="mb-4 text-2xl font-black leading-snug text-white md:text-3xl lg:text-4xl">
                       جاهز لرحلة صحية أكثر ذكاءً؟
                     </h2>
                     <p className="mb-7 text-sm leading-relaxed text-white/70 md:text-base">
-                      انضم لآلاف المرضى الذين يثقون بAdabibanek اية الطبية المتطورة في أي وقت وأي مكان.
+                      انضم لآلاف المرضى الذين يثقون بـ Adabibnak للرعاية الطبية المتطورة في أي وقت وأي مكان.
                     </p>
                     <div className="flex flex-wrap gap-3">
                       <Link href={startHref}>
                         <button className="rounded-full bg-[#2DBFB8] px-7 py-3 text-sm font-bold text-white shadow-[0_8px_25px_rgba(45,191,184,0.4)] transition hover:-translate-y-0.5 hover:bg-teal-500">
-                         ابدا مع Adabibnak
+                          ابدأ مع Adabibnak
                         </button>
                       </Link>
-                      <button 
+                      <button
                         onClick={() => setContactModalOpen(true)}
                         className="rounded-full border border-white/20 px-7 py-3 text-sm font-semibold text-white/80 transition hover:border-white/40 hover:text-white"
                       >
@@ -512,7 +479,6 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
-
                   <div className="relative shrink-0">
                     <div className="relative h-52 w-52 overflow-hidden rounded-full border-4 border-[#2DBFB8]/40 shadow-[0_0_50px_rgba(45,191,184,0.3)] md:h-64 md:w-64">
                       <Image src="/home.png" alt="doctor" fill className="object-cover object-[2%_center]" />
@@ -525,9 +491,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ══════════════════════════════════
-            5. TESTIMONIALS
-        ══════════════════════════════════ */}
+        {/* TESTIMONIALS */}
         <section id="testimonials" className="bg-[#f0f2f5] py-20 dark:bg-[#071312]" dir="rtl">
           <div className="container mx-auto px-4 md:px-10">
             <ScrollReveal>
@@ -538,18 +502,10 @@ export default function Home() {
               </div>
             </ScrollReveal>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              {[{
-                  name: "أحمد المصطفاوي", role: "من سيدي بلعباس",
-                  text: "كنت في رحلة عمل وابتعدت عن طبيبي المعتاد رغم ذلك نصحني الطبيب عبر المنصة بسرعة وكفاءة عالية بدون أي عناء. شكراً أديبيناك!",
-                },
-                {
-                  name: "سارة الغريب", role: "من البليدة",
-                  text: "سهولة الوصول للأطباء خلال ثوانٍ معدودة وكأنك أمامه مباشرة. أنصح كل من يحتاج رعاية صحية استخدام المنصة بثقة.",
-                },
-                {
-                  name: "إدر الأحمر", role: "من تمنراست",
-                  text: "كنت في رحلة عمل وكنت أحتاج طبيباً وكان التواصل سريعاً جداً، الطبيب متميز جداً في تخصصه وكانت الاستشارة مفيدة جداً.",
-                },
+              {[
+                { name: "أحمد المصطفاوي", role: "من سيدي بلعباس", text: "كنت في رحلة عمل وابتعدت عن طبيبي المعتاد رغم ذلك نصحني الطبيب عبر المنصة بسرعة وكفاءة عالية بدون أي عناء. شكراً أديبيناك!" },
+                { name: "سارة الغريب", role: "من البليدة", text: "سهولة الوصول للأطباء خلال ثوانٍ معدودة وكأنك أمامه مباشرة. أنصح كل من يحتاج رعاية صحية استخدام المنصة بثقة." },
+                { name: "إدر الأحمر", role: "من تمنراست", text: "كنت في رحلة عمل وكنت أحتاج طبيباً وكان التواصل سريعاً جداً، الطبيب متميز جداً في تخصصه وكانت الاستشارة مفيدة جداً." },
               ].map((t, i) => (
                 <ScrollReveal key={i} delay={i * 0.1}>
                   <div className="rounded-2xl border border-[#2DBFB8]/15 bg-white p-6 text-right shadow-sm transition-all duration-300 hover:shadow-[0_8px_30px_rgba(45,191,184,0.2)] hover:scale-[1.02] dark:border-[#2DBFB8]/15 dark:bg-[#0a1e1d]">
@@ -574,9 +530,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-       
-
       </div>
     </>
   );
