@@ -309,39 +309,7 @@ export default function OnboardingPage() {
           </CardContent>
         </Card>
 
-        {/* طبيب */}
-        <Card
-          className="border-blue-900/20 hover:border-blue-700/40 cursor-pointer transition-all"
-          onClick={() =>
-            !loading &&
-            setStep("doctor-form")
-          }
-        >
-          <CardContent className="pt-6 pb-6 flex flex-col items-center text-center">
-
-            <div className="p-4 bg-blue-900/20 rounded-full mb-4">
-              <Stethoscope className="h-8 w-8 text-blue-400" />
-            </div>
-
-            <CardTitle className="text-xl font-semibold text-foreground mb-2">
-              تسجيل دخول كطبيب
-            </CardTitle>
-
-            <CardDescription className="mb-4">
-              أنشئ ملفك المهني
-              وحدد أوقات توافرك
-              وقدم الاستشارات
-            </CardDescription>
-
-            <Button
-              className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
-              disabled={loading}
-            >
-              سجل
-            </Button>
-
-          </CardContent>
-        </Card>
+       
 
         {/* سكرتيرة */}
         <Card
