@@ -47,20 +47,19 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
               حتى في عمق الصحراء
             </span>
 
-           <h1 className="mb-3 text-4xl font-extrabold" style={{ color: "#2DBFB8" }}>
+          <h1 className="mb-3 text-4xl font-extrabold" style={{ color: "#2DBFB8" }}>
   طبيبك بين يديك
 </h1>
 
 <p
   style={{
-    color: "red",
-    fontSize: "30px",
-    fontFamily: "Arial",
+    color: "#2DBFB8",
+    fontSize: "22px",
+    fontWeight: "600",
   }}
 >
   ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ
-</p>
-             
+</p> 
             <p
               className="mb-8 max-w-lg leading-relaxed"
               style={{
@@ -124,7 +123,7 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
   style={{
     color: "#2DBFB8",
     fontSize: "18px",
-    fontWeight: "bold",
+    fontWeight: "600",
     marginBottom: "12px",
   }}
 >
@@ -134,7 +133,8 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
 <p
   className="mb-6 leading-7 text-sm"
 >
-  نحن نربط سكان المناطق النائية...
+  نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال
+              حجوزات آمنة وسريعة واستشارات متطورة.
 </p>
 
           <div className="flex gap-3 flex-wrap">
