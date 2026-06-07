@@ -117,19 +117,25 @@ export default function HeroSection({ startHref = "/onboarding" }: { startHref?:
           </span>
 
           <h1 className="mb-3 text-4xl font-extrabold" style={{ color: "#2DBFB8" }}>
-            طبيبك بين يديك
-          </h1>
+  طبيبك بين يديك
+</h1>
 
-          <p
-            className="mb-6 leading-7 text-sm"
-            style={{
-              color: "#cbd5d5",
-              textShadow: "0 1px 8px rgba(0,0,0,0.6)",
-            }}
-          >
-            نحن نربط سكان المناطق النائية بأفضل أطباء التشخيص عن بعد من خلال
-            حجوزات آمنة وسريعة واستشارات متطورة.
-          </p>
+<p
+  style={{
+    color: "#2DBFB8",
+    fontSize: "18px",
+    fontWeight: "bold",
+    marginBottom: "12px",
+  }}
+>
+  ⵜⴰⴱⵉⴱⴰⴽ ⴷⴰⴳ ⵉⴼⴰⵙⵙⴻⵏ ⵏⴰⴽ
+</p>
+
+<p
+  className="mb-6 leading-7 text-sm"
+>
+  نحن نربط سكان المناطق النائية...
+</p>
 
           <div className="flex gap-3 flex-wrap">
             <Link href={startHref}>
