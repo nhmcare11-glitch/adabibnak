@@ -7,7 +7,6 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-// ─── POST: استخراج الأدوية من وصفة مرفوعة ─────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
@@ -15,54 +14,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // PrescriptionUpload يرسل: { fileUrl, fileType }
     const { fileUrl, fileType } = await req.json();
-
     if (!fileUrl) {
       return NextResponse.json({ error: "fileUrl مطلوب" }, { status: 400 });
     }
 
-    // ── بناء محتوى الرسالة حسب نوع الملف ──────────────────────────────────
     type ContentBlock =
       | { type: "image"; source: { type: "url"; url: string } }
-      | { type: "document"; source: { type: "url"; url: string; media_type: "application/pdf" } }
       | { type: "text"; text: string };
 
     const userContent: ContentBlock[] = [];
 
-    if (fileType === "pdf") {
-      userContent.push({
-        type: "document",
-        source: { type: "url", url: fileUrl, media_type: "application/pdf" },
-      });
-    } else {
-      // image (jpeg, png, webp …)
-      userContent.push({
-        type: "image",
-        source: { type: "url", url: fileUrl },
-      });
-    }
+    // PDF غير مدعوم كـ URL مباشر في Claude — نعامله كصورة
+    userContent.push({
+      type: "image",
+      source: { type: "url", url: fileUrl },
+    });
 
     userContent.push({
       type: "text",
-      text: `أنت مساعد طبي متخصص. حلل هذه الوصفة الطبية واستخرج قائمة الأدوية بدقة.
-
-أجب فقط بـ JSON بهذا الشكل الصارم، بدون أي نص أو markdown خارجه:
+      text: `أنت مساعد طبي. استخرج أسماء الأدوية من هذه الوصفة.
+أجب فقط بـ JSON بدون أي نص خارجه:
 {
   "drugs": [
-    {
-      "name": "اسم الدواء باللاتينية أو العربية",
-      "dosage": "الجرعة إن وُجدت وإلا null",
-      "frequency": "عدد مرات التناول إن وُجد وإلا null"
-    }
+    { "name": "اسم الدواء", "dosage": "الجرعة أو null", "frequency": "عدد المرات أو null" }
   ],
-  "doctorName": "اسم الطبيب إن ظهر وإلا null",
-  "date": "تاريخ الوصفة إن ظهر وإلا null",
-  "notes": "أي ملاحظات إضافية مهمة أو null"
+  "doctorName": "اسم الطبيب أو null",
+  "date": "التاريخ أو null",
+  "notes": "ملاحظات أو null"
 }`,
     });
 
-    // ── استدعاء Claude ──────────────────────────────────────────────────────
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
@@ -74,7 +56,6 @@ export async function POST(req: NextRequest) {
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("");
 
-    // تنظيف أي backticks قد تأتي رغم التعليمات
     const clean = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const extracted = JSON.parse(clean) as {
       drugs: { name: string; dosage: string | null; frequency: string | null }[];
@@ -83,47 +64,47 @@ export async function POST(req: NextRequest) {
       notes: string | null;
     };
 
-    // ── مطابقة الأدوية في قاعدة البيانات ──────────────────────────────────
+    // مطابقة الأدوية في قاعدة البيانات
     const drugNames = extracted.drugs.map((d) => d.name);
 
     const matchedDrugs = await db.drug.findMany({
       where: {
         OR: drugNames.flatMap((name) => [
-          { name: { contains: name, mode: "insensitive" } },
           { nameAr: { contains: name, mode: "insensitive" } },
+          { nameEn: { contains: name, mode: "insensitive" } },
+          { genericName: { contains: name, mode: "insensitive" } },
         ]),
       },
       include: {
         pharmacyDrugs: {
-          where: { inStock: true },
+          where: { isAvailable: true },
           include: { pharmacy: true },
           take: 3,
         },
       },
     });
 
-    // ── تسجيل الوصفة للمريض (اختياري — لا نربطها بموعد) ──────────────────
+    // تسجيل الوصفة
     const user = await db.user.findUnique({ where: { clerkUserId: userId } });
     if (user) {
       await db.prescription.create({
         data: {
-          // appointmentId مطلوب في الـ schema الحالي بـ @unique
-          // نولّد قيمة مؤقتة حتى تُعدَّل الـ schema لاحقاً لجعله اختيارياً
           patientId: user.id,
-doctorId: user.id,
+          fileUrl,
+          fileType,
+          extractedDrugs: JSON.stringify(extracted),
           medications: extracted.drugs,
-          uploadedImageUrl: fileUrl,
-          extractedDrugs: extracted,
-          status: "PROCESSED",
+          status: "pending",
         },
       });
     }
 
     return NextResponse.json({
       success: true,
-      drugs: matchedDrugs,          // ← هذا ما يستخدمه PrescriptionUpload → onExtracted
-      extracted,                     // ← تفاصيل إضافية للعرض
+      drugs: matchedDrugs,
+      extracted,
     });
+
   } catch (error) {
     console.error("[prescription/route] error:", error);
     return NextResponse.json(
@@ -133,7 +114,6 @@ doctorId: user.id,
   }
 }
 
-// ─── GET: آخر وصفات المريض ─────────────────────────────────────────────────
 export async function GET() {
   try {
     const { userId } = await auth();
@@ -149,13 +129,13 @@ export async function GET() {
     const prescriptions = await db.prescription.findMany({
       where: {
         patientId: user.id,
-        uploadedImageUrl: { not: null }, // وصفات الصيدلية فقط
+        fileUrl: { not: null },
       },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
         id: true,
-        uploadedImageUrl: true,
+        fileUrl: true,
         extractedDrugs: true,
         status: true,
         createdAt: true,
@@ -164,7 +144,7 @@ export async function GET() {
 
     return NextResponse.json({ prescriptions });
   } catch (error) {
-    console.error("[prescription/route GET] error:", error);
+    console.error("[prescription GET] error:", error);
     return NextResponse.json({ error: "خطأ في الخادم" }, { status: 500 });
   }
 }

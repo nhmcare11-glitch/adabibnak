@@ -27,8 +27,6 @@ model User {
   doctorAppointments   Appointment[]           @relation("DoctorAppointments")
   patientAppointments  Appointment[]           @relation("PatientAppointments")
   availabilities       Availability[]
-  doctorNotes          ConsultationNote[]      @relation("DoctorNotes")
-  patientNotes         ConsultationNote[]      @relation("PatientNotes")
   doctorConversations  Conversation[]          @relation("DoctorConversations")
   patientConversations Conversation[]          @relation("PatientConversations")
   faceVerification     DoctorFaceVerification?
@@ -94,7 +92,6 @@ model Appointment {
   videoCallStatus    VideoCallStatus?  @default(WAITING)
   doctor             User              @relation("DoctorAppointments", fields: [doctorId], references: [id])
   patient            User              @relation("PatientAppointments", fields: [patientId], references: [id])
-  consultationNote   ConsultationNote?
   payment            Payment?
   prescription       Prescription?
 
@@ -208,24 +205,18 @@ model MedicalRecord {
 }
 
 model ConsultationNote {
-  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  appointmentId     String?        @unique
-  doctorId          String
-  patientId         String
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointmentId     String
+  doctorId          String?
+  patientId         String?
   symptoms          String?
   diagnosis         String?
   recommendations   String?
   prescriptionNotes String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @default(now()) @updatedAt
-  appointment       Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  doctor            User        @relation("DoctorNotes", fields: [doctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  patient           User        @relation("PatientNotes", fields: [patientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
 
-  @@index([appointmentId])
-  @@index([doctorId])
-  @@index([patientId])
-  @@map("ConsultationNote")
+  @@ignore
 }
 
 model Payment {
@@ -317,23 +308,25 @@ model PharmacyDrug {
 }
 
 model Prescription {
-  id               String      @id @default(cuid())
-  appointmentId    String      @unique
+  id               String       @id @default(cuid())
+  appointmentId    String?      @unique
   doctorId         String
   patientId        String
   diagnosis        String?
   medications      Json
   instructions     String?
   followUpDate     DateTime?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
   uploadedImageUrl String?
   extractedDrugs   Json?
   pharmacyId       String?
-  status           String      @default("PENDING")
-  appointment      Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor           User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
-  patient          User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
+  status           String       @default("PENDING")
+  fileUrl          String?
+  fileType         String?
+  appointment      Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor           User         @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  patient          User         @relation("PatientPrescriptions", fields: [patientId], references: [id])
 }
 
 enum VideoCallStatus {
