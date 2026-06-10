@@ -134,21 +134,7 @@ model Message {
   @@index([read])
 }
 
-model Prescription {
-  id            String      @id @default(uuid())
-  appointmentId String      @unique
-  doctorId      String
-  patientId     String
-  diagnosis     String?
-  medications   Json
-  instructions  String?
-  followUpDate  DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
-  doctor        User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
-  patient       User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
-}
+
 
 model Report {
   id        String   @id @default(uuid())
@@ -364,4 +350,63 @@ enum PaymentStatus {
 enum SalaryStatus {
   PENDING
   PAID
+}
+model Drug {
+  id            String   @id @default(cuid())
+  nameAr        String
+  nameFr        String?
+  nameEn        String?
+  genericName   String?
+  category      String   // مضاد حيوي، مسكن، إلخ
+  form          String   // كبسول، شراب، حقنة
+  strength      String?  // 500mg، 250mg/5ml
+  description   String?
+  alternatives  Drug[]   @relation("DrugAlternatives")
+  alternativeOf Drug[]   @relation("DrugAlternatives")
+  pharmacyDrugs PharmacyDrug[]
+  createdAt     DateTime @default(now())
+}
+
+model Pharmacy {
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  phone        String?
+  latitude     Float
+  longitude    Float
+  openingHours String?  // JSON string: {"mon":"8:00-22:00",...}
+  is24Hours    Boolean  @default(false)
+  isOpen       Boolean  @default(true)
+  drugs        PharmacyDrug[]
+  createdAt    DateTime @default(now())
+}
+
+model PharmacyDrug {
+  id           String   @id @default(cuid())
+  pharmacy     Pharmacy @relation(fields: [pharmacyId], references: [id])
+  pharmacyId   String
+  drug         Drug     @relation(fields: [drugId], references: [id])
+  drugId       String
+  isAvailable  Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([pharmacyId, drugId])
+}
+
+model Prescription {
+  id             String       @id @default(cuid())
+  userId         String?
+  fileUrl        String?
+  fileType       String?
+  extractedDrugs String?
+  status         String       @default("pending")
+  createdAt      DateTime     @default(now())
+
+  // علاقات المشروع القديمة — لا تحذفها
+  doctorId       String?
+  patientId      String?
+  appointmentId  String?      @unique
+  doctor         User?        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  patient        User?        @relation("PatientPrescriptions", fields: [patientId], references: [id])
+  appointment    Appointment? @relation(fields: [appointmentId], references: [id])
 }
