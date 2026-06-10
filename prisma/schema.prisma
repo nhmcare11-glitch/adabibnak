@@ -23,6 +23,7 @@ model User {
   verificationStatus   VerificationStatus?     @default(PENDING)
   age                  Int?
   bloodType            String?
+  availabilityStatus   String?                 @default("OFFLINE")
   doctorAppointments   Appointment[]           @relation("DoctorAppointments")
   patientAppointments  Appointment[]           @relation("PatientAppointments")
   availabilities       Availability[]
@@ -97,6 +98,7 @@ model Appointment {
   payment            Payment?
   prescription       Prescription?
 
+  @@unique([doctorId, startTime], map: "unique_doctor_time")
   @@index([status, startTime])
   @@index([doctorId, startTime])
   @@index([patientId, startTime])
@@ -133,8 +135,6 @@ model Message {
   @@index([conversationId, createdAt])
   @@index([read])
 }
-
-
 
 model Report {
   id        String   @id @default(uuid())
@@ -209,7 +209,7 @@ model MedicalRecord {
 
 model ConsultationNote {
   id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  appointmentId     String      @unique
+  appointmentId     String?        @unique
   doctorId          String
   patientId         String
   symptoms          String?
@@ -218,7 +218,7 @@ model ConsultationNote {
   prescriptionNotes String?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @default(now()) @updatedAt
-  appointment       Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  appointment       Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   doctor            User        @relation("DoctorNotes", fields: [doctorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   patient           User        @relation("PatientNotes", fields: [patientId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -273,6 +273,67 @@ model SecretarySalary {
   @@unique([secretaryId, month, year])
   @@index([secretaryId])
   @@index([status])
+}
+
+model Drug {
+  id                   String         @id @default(cuid())
+  name                 String         @unique
+  nameAr               String?
+  category             String
+  description          String?
+  manufacturer         String?
+  requiresPrescription Boolean        @default(false)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @default(now())
+  pharmacyDrugs        PharmacyDrug[]
+}
+
+model Pharmacy {
+  id        String         @id @default(cuid())
+  name      String
+  nameAr    String?
+  address   String
+  city      String
+  phone     String?
+  latitude  Float
+  longitude Float
+  isOpen24h Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now())
+  drugs     PharmacyDrug[]
+}
+
+model PharmacyDrug {
+  id         String   @id @default(cuid())
+  pharmacyId String
+  drugId     String
+  inStock    Boolean  @default(true)
+  price      Float?
+  drug       Drug     @relation(fields: [drugId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pharmacy   Pharmacy @relation(fields: [pharmacyId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([drugId])
+  @@index([pharmacyId])
+}
+
+model Prescription {
+  id               String      @id @default(cuid())
+  appointmentId    String      @unique
+  doctorId         String
+  patientId        String
+  diagnosis        String?
+  medications      Json
+  instructions     String?
+  followUpDate     DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  uploadedImageUrl String?
+  extractedDrugs   Json?
+  pharmacyId       String?
+  status           String      @default("PENDING")
+  appointment      Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  doctor           User        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
+  patient          User        @relation("PatientPrescriptions", fields: [patientId], references: [id])
 }
 
 enum VideoCallStatus {
@@ -350,63 +411,4 @@ enum PaymentStatus {
 enum SalaryStatus {
   PENDING
   PAID
-}
-model Drug {
-  id            String   @id @default(cuid())
-  nameAr        String
-  nameFr        String?
-  nameEn        String?
-  genericName   String?
-  category      String   // مضاد حيوي، مسكن، إلخ
-  form          String   // كبسول، شراب، حقنة
-  strength      String?  // 500mg، 250mg/5ml
-  description   String?
-  alternatives  Drug[]   @relation("DrugAlternatives")
-  alternativeOf Drug[]   @relation("DrugAlternatives")
-  pharmacyDrugs PharmacyDrug[]
-  createdAt     DateTime @default(now())
-}
-
-model Pharmacy {
-  id           String   @id @default(cuid())
-  name         String
-  address      String
-  phone        String?
-  latitude     Float
-  longitude    Float
-  openingHours String?  // JSON string: {"mon":"8:00-22:00",...}
-  is24Hours    Boolean  @default(false)
-  isOpen       Boolean  @default(true)
-  drugs        PharmacyDrug[]
-  createdAt    DateTime @default(now())
-}
-
-model PharmacyDrug {
-  id           String   @id @default(cuid())
-  pharmacy     Pharmacy @relation(fields: [pharmacyId], references: [id])
-  pharmacyId   String
-  drug         Drug     @relation(fields: [drugId], references: [id])
-  drugId       String
-  isAvailable  Boolean  @default(true)
-  updatedAt    DateTime @updatedAt
-
-  @@unique([pharmacyId, drugId])
-}
-
-model Prescription {
-  id             String       @id @default(cuid())
-  userId         String?
-  fileUrl        String?
-  fileType       String?
-  extractedDrugs String?
-  status         String       @default("pending")
-  createdAt      DateTime     @default(now())
-
-  // علاقات المشروع القديمة — لا تحذفها
-  doctorId       String?
-  patientId      String?
-  appointmentId  String?      @unique
-  doctor         User?        @relation("DoctorPrescriptions", fields: [doctorId], references: [id])
-  patient        User?        @relation("PatientPrescriptions", fields: [patientId], references: [id])
-  appointment    Appointment? @relation(fields: [appointmentId], references: [id])
 }

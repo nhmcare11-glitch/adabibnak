@@ -13,7 +13,7 @@ import {
 } from "@clerk/nextjs";
 import {
   ShieldCheck, Stethoscope, Calendar,
-  User, Menu, X, LogIn
+  User, Menu, X, LogIn, Pill
 } from "lucide-react";
 import ThemeToggle from "@/components/ui/theme-toggle";
 
@@ -152,6 +152,13 @@ const Header = () => {
                 <Link href="/doctor-dashboard">
                   <button className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#2DBFB8] to-[#0f766e] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2DBFB8]/25 hover:shadow-[#2DBFB8]/40 hover:-translate-y-0.5 transition-all duration-300">
                     <Stethoscope className="w-3.5 h-3.5" /> لوحتي
+                  </button>
+                </Link>
+              )}
+              {role === "PATIENT" && (
+                <Link href="/pharmacy">
+                  <button className="flex items-center gap-1.5 rounded-full border border-[#2DBFB8]/40 px-4 py-2.5 text-xs font-bold text-[#2DBFB8] hover:bg-[#2DBFB8]/10 hover:-translate-y-0.5 transition-all duration-300">
+                    <Pill className="w-3.5 h-3.5" /> الصيدلية
                   </button>
                 </Link>
               )}
